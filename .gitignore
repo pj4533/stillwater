@@ -74,3 +74,10 @@ tmp/
 *.bundle
 /tools/ffmpeg*
 /tools/ffprobe*
+
+# Private diagnostics and transient device runtime state
+midi-tap*.json
+frame.tmp
+recovery-status.json
+boot-pending
+retry-stillwater

@@ -9,8 +9,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 939,
-      "sha256": "afcfe36222263d807574f74f603053a9aae36b73cfedea5dc2a792bf52a6b3c3"
+      "bytes": 1073,
+      "sha256": "1a822af2f06e72c061edfa70c906437a8f9d8fac92cad72a97a31989ca50fd8c"
     },
     {
       "path": "AGENTS.md",
@@ -188,6 +188,11 @@
       "sha256": "5cb942187cf9c8c5c6108232d3fa6f67a1a568727eb4a77f8f0089aa4450d98c"
     },
     {
+      "path": "docs/EXPORT.md",
+      "bytes": 5692,
+      "sha256": "ab4a0c47d80981633e3556e34747529f65147d499ee654518abf6e89b46023ca"
+    },
+    {
       "path": "docs/INSTALL.md",
       "bytes": 8649,
       "sha256": "741676a5e68fec4e3239dd3a2169fc7746d18f7d878972bfeb2c7e1fb2e85df3"
@@ -359,8 +364,8 @@
     },
     {
       "path": "scripts/switch-to-stillwater.sh",
-      "bytes": 970,
-      "sha256": "07a6822c06a8809aa27e04b626a784966609217b0d8e16b57678373550d1b066"
+      "bytes": 1159,
+      "sha256": "9e98e355675b37d32af80e2a0228d156ff24ded39535b754c555ecfcf209de92"
     },
     {
       "path": "src/app.py",
@@ -506,6 +511,11 @@
       "path": "tests/test_supervisor_ownership.py",
       "bytes": 1725,
       "sha256": "391a718df5dfd076c87e72921072460f4ce2ecdeccb8f9d8fbfc9115cf2c10a6"
+    },
+    {
+      "path": "tests/test_switch_ownership.py",
+      "bytes": 4302,
+      "sha256": "ae26e2ad388f79acd1a3ab52db3a66bae22ab916c7354ca1ce9214167a5adc67"
     },
     {
       "path": "tests/test_v2_dsp.py",

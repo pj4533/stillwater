@@ -16,8 +16,10 @@ if [ -f /var/lib/push3.pid ] && kill -0 "$(cat /var/lib/push3.pid)" 2>/dev/null;
   killall -TERM Push3 2>/dev/null || true
   sleep 2
 fi
-if pidof Push3 >/dev/null 2>&1; then
-  echo 'Push surface still owned; refusing takeover.' >&2
+# A missing/stale launcher PID file does not prove either owner is gone.
+# Fail closed before changing markers, enabling boot or starting the service.
+if pidof Live >/dev/null 2>&1 || pidof Push3 >/dev/null 2>&1; then
+  echo 'Live or Push surface still owned; refusing takeover.' >&2
   exit 1
 fi
 # Remove the one-time updater quit marker before any later stock start.

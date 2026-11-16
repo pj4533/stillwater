@@ -53,8 +53,7 @@ it is not a substitute for reviewing every staged file.
   source images are original generated artwork. Audits are heuristic, not a
   security certification; an independent review is still required.
 
-The [manifest](export-manifest.json) lists106curated files (excluding this report
-and the manifest itself), with sizes and SHA256. It contains no parent history
+The [manifest](export-manifest.json) lists108curated files (excluding only the manifest itself), with sizes and SHA256. It contains no parent history
 reference or private source paths. Build outputs/test logs remain ignored. The paired x86_64 crossbuild also passed
 and reproduced native SHA256
 `7357badb8048658605598cc1584c21b8da3372d3819ad0800e82af3ee67d885d`.
@@ -75,3 +74,19 @@ full LICENSE.push-hack and NOTICE retained. No third-party DSP kernels copied.
 FFmpeg/ffprobe are excluded; optional pinned download uses its GPL license and
 separate source/build provenance. Python/system ALSA/libc/Pillow/build tools are
 external dependencies under their own upstream terms; see CREDITS and INSTALL.
+
+## Installation review correction
+
+The stock transition now refuses if either Live or Push3 remains alive, even
+when the launcher PID file is absent/stale. This check precedes marker removal,
+boot enabling and service start; existing graceful stock shutdown is retained.
+Three hermetic regression tests cover eight absent/stale owner combinations,
+successful graceful shutdown and a Live-not-quitting refusal. The old helper
+fails the two Live-only absent/stale cases. Both source copies pass all three
+tests, and shell syntax checks pass. The complete updated standalone project
+suite passed215tests in21.973s. No hardware was accessed.
+
+Ignores now also cover midi-tap*.json, frame.tmp, recovery-status.json, boot-pending
+and retry-stillwater; these paths contained no committed leak. No history rewrite
+is performed. AI-generation provenance in original PNGs is retained, with no
+personal information or prompt content identified by independent review.
