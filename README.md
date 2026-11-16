@@ -1,19 +1,36 @@
 <div align="center">
 
-# Stillwater
+![Stillwater — ambient water and light wordmark](docs/media/stillwater-banner.png)
 
-**A small ambient instrument. Eight sound worlds. One growing loop.**
+# Turn Push 3 into a dedicated ambient instrument
 
-An independent, open-source instrument for **Ableton Push 3 Standalone**.
-Custom sound, custom screen, running on the device.
+**Eight sound worlds. One growing loop. Boot straight into Stillwater.**
 
-![Stillwater V4 — actual Push display capture](docs/media/v4-device-prism.png)
-
-*Actual V4 display pixels from a scripted, isolated device test. Not a camera photograph.*
+[![License: MIT](https://img.shields.io/badge/license-MIT-c8c4b7?style=flat-square)](LICENSE)
+[![Hardware: Push 3 Standalone](https://img.shields.io/badge/hardware-Push_3_Standalone-9eb7ac?style=flat-square)](docs/INSTALL.md)
+[![Version: V4](https://img.shields.io/badge/version-V4-c2a6c5?style=flat-square)](docs/CONTROLS.md)
+[![Python + C](https://img.shields.io/badge/built_with-Python_%2B_C-b7ad91?style=flat-square)](docs/ARCHITECTURE.md)
 
 [Get started](#play-a-little) · [Install](docs/INSTALL.md) · [Controls](docs/CONTROLS.md) · [Develop](docs/DEVELOPMENT.md) · [Agent guide](AGENTS.md)
 
 </div>
+
+Stillwater is a complete, independent instrument experience for **Ableton Push 3
+Standalone**: its own synthesis engine, screen, pad behavior, looping workflow
+and local song library. Once installed and explicitly enabled, Push boots directly
+into Stillwater instead of the stock Live/Push application. It runs on the device’s
+existing Linux system; it does not run inside Ableton Live, replace the OS or
+install a custom kernel.
+
+The boot selector starts Stillwater in place of the stock application, with
+exclusive ownership of audio, pads and display. Hold **Settings for two seconds**
+to return to stock for the session; the [installation guide](docs/INSTALL.md)
+explains how to restore stock as the boot default or remove Stillwater. Installation
+alone does not enable auto-start: the deliberate switch step does.
+
+![Stillwater V4 — actual Push display capture](docs/media/v4-device-prism.png)
+
+*Actual V4 display pixels from a scripted, isolated device test. Not a camera photograph.*
 
 Stillwater turns the pad grid into a looping ambient instrument. Press Play and
 play a note to anchor a one-bar phrase. Add another layer, shape its material,

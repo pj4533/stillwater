@@ -1,12 +1,14 @@
 # Release media
 
-All included media is original Stillwater UI. No hardware/product photograph,
+Included media comprises original Stillwater UI and an original generated brand
+banner. No hardware/product photograph,
 stock Ableton graphics, user recording or private operational screenshot is
 included. The earlier private social edit used an Ableton product photograph
 without an established redistribution license; it is deliberately omitted.
 
 | File in `docs/media/` | Provenance |
 |---|---|
+| `stillwater-banner.png` | Original AI-generated masthead, not device UI or a hardware photograph; [tool and exact prompt](BANNER.md) |
 | `v4-device-prism.png` | Actual pixels sent to Push during the V4 isolated scripted acceptance; mixed macro ranges, master zero |
 | `v4-device-key.png` | Same device test; draft key selection |
 | `v4-device-recordings-off.png` | Same device test; explicit film controls, capture off |
