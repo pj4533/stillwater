@@ -49,7 +49,7 @@ class SessionRecorder:
     def __init__(self,engine,directory,ffmpeg=None,ffprobe=None):
         self.engine=engine;self.directory=Path(directory)
         self.ffmpeg=list(ffmpeg or ['/usr/bin/ffmpeg']);self.ffprobe=list(ffprobe or ['/usr/bin/ffprobe'])
-        self.lock=threading.Lock();self.process_lock=threading.Lock();self.worker=None;self.closed=False;self.process=None
+        self.lock=threading.Lock();self.process_lock=threading.Lock();self.worker=None;self.manager_busy=False;self.closed=False;self.process=None
         self.status=dict(state='idle',busy=False,job=None,seconds=0,error=None,warning=None,filename=None)
         self.visible=None;self.q=None;self.stop_event=threading.Event();self.cancel=threading.Event()
         self.endpoint=None;self.failure=None;self.started=0;self.epoch=0;self.last_clock=0
@@ -87,6 +87,7 @@ class SessionRecorder:
         if set(req)=={'op','job'} and req['op']=='record_recover':return self.recover(req['job'])
         raise ValueError('Invalid recording operation or fields')
     def _admit(self):
+        if self.manager_busy:raise ValueError('Recording storage cleanup busy')
         if self.closed:raise ValueError('Recorder is shutting down')
         if self.status['busy'] or (self.worker and self.worker.is_alive()):raise ValueError('Video busy; wait for saving')
     def start(self):
@@ -299,6 +300,7 @@ class SessionRecorder:
             self._launch(self._recover,(job,));return self.snapshot()
     def _load_recovery(self,job):
         path=self.directory/'jobs'/job
+        if (self.directory/'.deleting'/(job+'.json')).exists():raise ValueError('Job is being deleted')
         for entry in (self.directory/'jobs',path,path/'metadata.json',path/'audio.s16le',path/'screen.bgr565'):
             if entry.is_symlink():raise ValueError('Symlink recovery is not allowed')
         try:

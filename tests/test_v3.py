@@ -103,7 +103,7 @@ class NativeV3(unittest.TestCase):
  def test_window_normalizes_after_cc_undo_structural_history_load_and_new(self):
   import queue
   from types import SimpleNamespace
-  self.wire(58);self.wire(71,126);self.wire(63)
+  self.wire(58);self.wire(71,124);self.wire(71,124);self.wire(27);self.wire(50);self.wire(63)
   self.assertEqual((self.m.state.root,self.m.octave),(60,1));self.assert_pad_window()
   self.wire(119);self.audio(1)
   self.assertEqual((self.m.state.root,self.m.octave),(62,0));self.assert_pad_window()
@@ -209,7 +209,7 @@ class NativeV3(unittest.TestCase):
   self.p.undo();self.audio(1);self.assertEqual(self.m.state,old)
  def test_key_pages_no_hidden_macro_edits_and_held_epoch_retirement(self):
   self.start();self.wire(36,100,'note');self.audio(40);old_epoch=self.m.capture_epoch;params=self.m.state.layers[0].parameters
-  self.wire(58);self.wire(71,1);self.audio(1);self.assertGreater(self.m.capture_epoch,old_epoch);self.assertEqual(self.e.loop_stats()['held'],0);self.assertEqual(self.m.state.layers[0].parameters,params)
+  self.wire(58);self.wire(71,4);self.assertEqual(self.m.capture_epoch,old_epoch);self.wire(27);self.audio(1);self.assertGreater(self.m.capture_epoch,old_epoch);self.assertEqual(self.e.loop_stats()['held'],0);self.assertEqual(self.m.state.layers[0].parameters,params)
   self.audio(1000);self.assertTrue(all(not s['held'] for s in self.e.stats()['manual']));self.assertFalse(self.m.pending)
   self.wire(113);tempo=self.m.state.tempo;self.wire(72,1);self.assertEqual(self.m.state.tempo,tempo);self.assertEqual(self.m.state.layers[0].parameters,params)
   self.wire(71,1);self.audio(1);self.assertEqual(self.e.loop_stats()['pending_tempo'],tempo+1)

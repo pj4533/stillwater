@@ -54,12 +54,12 @@ python3 scripts/prepare-home.py .build/payload --engine .build/engine-device.so 
 
 This refuses an existing destination, copies only runtime files and the selected
 engine/tools, and never copies sessions, backups, recordings or machine configuration.
-Inspect its hashes before copying. Source/native must be paired at ABI3, and
-runtime art must include all eight `assets/v2/*.bin`, eight `assets/v3/*.poses`
-and eight `assets/v3/*.working`; see `docs/runtime-manifest.json` for42core runtime
+Inspect its hashes before copying. Source/native must be paired at ABI4, and
+runtime art must include all eight `assets/v2/*.bin`, eight `assets/v4/*.poses`
+and eight `assets/v4/*.working`; see `docs/runtime-manifest.json` for45 core runtime
 hashes. The payload helper also includes ownership/recovery scripts and legacy
 renderer dependencies; optional encoder tools must include their own provenance.
-Do not omit the working backgrounds or mix old pose formats with V3 source.
+Do not omit the working backgrounds or mix old pose formats with V4 source.
 
 ## Connect and back up deliberately
 
@@ -159,9 +159,9 @@ with its executable mode preserved. Keep `/data/push-ambient` and off-device
 backups until music/recordings have been exported; no removal script deletes them.
 
 Rollback requires matching source/native/assets and the appropriate session format.
-V3 first imports the latest validated V2 envelope only when current-v3 is absent,
+V4 first imports the latest validated V2 envelope only when current-v3 is absent,
 preserving exact music and full history. Missing V2 length means16beats/four bars;
-fresh V3 songs start4beats/one bar. V2 and legacy files remain untouched. Keep
+fresh V4 songs start4beats/one bar. V2 and legacy files remain untouched. Keep
 current-v3 alongside earlier session versions on code rollback; never overwrite
 newer music merely to restore an
 old build. Restore a private session backup only deliberately, after archiving the

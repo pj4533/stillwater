@@ -29,6 +29,10 @@ class Snapshot(C.Structure):
     _fields_=[(k,C.c_uint64) for k in ('sample','origin','phase','cycle','loop_frames','epoch','generation','activity','boundary')]+[('tempo',C.c_double),('pending_tempo',C.c_double)]+[(k,C.c_int32) for k in ('transport','held','pending','captures','rejected','loop_beats','pending_beats')]+[('op_token',C.c_uint64),('ack_token',C.c_uint64),('op_status',C.c_int32)]
 
 
+class PitchSnapshot(C.Structure):
+    _fields_=[('epoch',C.c_uint64),('reset',C.c_uint64),('enabled',C.c_uint32),('onset',(C.c_uint64*73)*8),('gate',(C.c_uint32*73)*8)]
+
+
 def bank_for(song):
     bank=SongBank(tempo=song.tempo,master=song.master,count=len(song.layers),loop_beats=song.loop_beats)
     for i,layer in enumerate(song.layers):
@@ -45,7 +49,7 @@ class LoopEngine(Engine):
         # Check before Engine prepares history or opens ALSA, and before any
         # V3 structure pointer crosses the ABI boundary.
         lib=C.CDLL(str(path))
-        if not hasattr(lib,'sw_loop_abi') or lib.sw_loop_abi()!=3:raise RuntimeError('Stillwater native ABI mismatch / V3 requires paired engine')
+        if not hasattr(lib,'sw_loop_abi') or lib.sw_loop_abi()!=4:raise RuntimeError('Stillwater native ABI mismatch / V4 requires paired engine')
         super().__init__(path,device)
         self.lib.sw_song_stage.argtypes=[C.POINTER(SongBank)]+[C.c_uint64]*5
         self.lib.sw_song_cancel.argtypes=[C.c_uint64]
@@ -60,7 +64,8 @@ class LoopEngine(Engine):
         self.lib.sw_loop_master.argtypes=[C.c_float]
         self.lib.sw_layer_parameter.argtypes=[C.c_int,C.c_int,C.c_float]
         self.lib.sw_loop_fx.argtypes=[C.c_int,C.c_int];self.lib.sw_loop_fx.restype=C.c_float
-        self.generation=0;self.last_snapshot=None
+        self.lib.sw_loop_pitches.argtypes=[C.POINTER(PitchSnapshot)]
+        self.generation=0;self.last_snapshot=None;self.last_pitches=None
     def check(self,result):
         if result:raise RuntimeError('native loop command rejected (%d)'%result)
     def publish(self,song,epoch,retire_mask=0):
@@ -77,8 +82,15 @@ class LoopEngine(Engine):
         if result==-1 and self.last_snapshot is not None:return dict(self.last_snapshot)
         self.check(result);self.last_snapshot={key:getattr(snapshot,key) for key,_ in Snapshot._fields_}
         return dict(self.last_snapshot)
+    def pitches(self):
+        snapshot=PitchSnapshot();result=self.lib.sw_loop_pitches(C.byref(snapshot))
+        if result==-1 and self.last_pitches is not None:return self.last_pitches
+        self.check(result)
+        self.last_pitches=dict(epoch=snapshot.epoch,reset=snapshot.reset,enabled=snapshot.enabled,
+                              onset=[list(row) for row in snapshot.onset],gate=[list(row) for row in snapshot.gate])
+        return self.last_pitches
     def stats(self):
-        result=super().stats();result['loop']=self.loop_stats()
+        result=super().stats();result['loop']=self.loop_stats();result['pitches']=self.pitches()
         result['fx']=[[self.lib.sw_loop_fx(l,m) for m in range(3)] for l in range(8)]
         return result
     def takes(self):
@@ -145,7 +157,9 @@ class LoopPerformance:
         self.drain();m=self.model
         if (root,scale)==(m.state.root,m.state.scale):return False
         m.pending.clear();m.capture_epoch+=1
+        m.gesture=None
         m.rekey(root,scale)
+        m.gesture=None
         self.engine.publish(m.state,m.capture_epoch,255);self.slots=[None]*8
         return True
     def stop(self):
@@ -196,7 +210,7 @@ class LoopPerformance:
             result=self.engine.lib.sw_performance_on(slot,self.token,m.selected,pitch,value/127,record,m.capture_epoch,eid)
             if result!=0:m.pending.pop((slot,self.token),None)
             if result<0:self.engine.check(result)
-            self.slots[slot]=dict(channel=channel,pad=number,token=self.token,held=True)
+            self.slots[slot]=dict(channel=channel,pad=number,token=self.token,held=True,layer=m.selected,pitch=pitch)
             if self.transport==1:self.transport=2
         elif kind=='note_off':
             for i,s in enumerate(self.slots):

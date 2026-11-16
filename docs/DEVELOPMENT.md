@@ -32,7 +32,8 @@ only when explicitly invoked.
 ## Offline production workflow and measurements
 
 ```sh
-python3 scripts/rehearse-v3.py
+python3 scripts/rehearse-v4.py # V4 managers, native notes, real film and deletion checks
+python3 scripts/rehearse-v3.py # long-loop regression
 python3 scripts/rehearse-v2.py # legacy16beat regression
 python3 scripts/benchmark-v3.py
 python3 scripts/benchmark-v2.py
@@ -90,14 +91,14 @@ The `.bin` files are BGR565 image data, not executable binaries. To regenerate:
 
 ```sh
 python3 scripts/prepare-v2-art.py
-python3 scripts/prepare-v3-art.py
-python3 scripts/preview-v3.py # .build/v3-preview; fixed macros and native audio
+python3 scripts/prepare-v4-art.py
+python3 scripts/preview-v4.py # .build/v4-preview; ranges, managers, native audio
 # Optional legacy renderer assets:
 python3 scripts/prepare-art.py
 python3 scripts/prepare-organism.py
 ```
 
-The V3 converter derives material deformations from exact prepared V2 pixels,
+The V4 converter derives material deformations from exact prepared V2 pixels,
 including independent audio poses and quiet working backgrounds. Its32low/high
 frames, fixed50%-macro native-audition clips and knob sweeps use the production
 renderer at960x160. Silent geometry persists.
@@ -105,5 +106,5 @@ renderer at960x160. Silent geometry persists.
 The V2 converter downsamples then nearest-neighbor scales for intentional pixel
 texture; runtime needs no Pillow. Draw text after animated material, retain
 readable negative space, and keep main/mixer/help previews at native 960×160.
-Curated screenshots/GIFs in `docs/media` are synthetic local renderer output,
-not device-camera captures. Do not check generated music, logs or private state in.
+Curated media provenance and regeneration are in [MEDIA](MEDIA.md): V4 device
+display captures and synthetic production-renderer animation, with no camera footage. Do not check generated music, logs or private state in.

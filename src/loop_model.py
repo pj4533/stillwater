@@ -248,6 +248,9 @@ class SessionWriter:
             name='song-'+uuid.uuid4().hex+'.json';atomic_write(directory/name,payload['current'] if kind=='archive' else payload,True)
             return dict(kind=kind,name=name,revision=payload['revision'],request_token=payload.get('request_token'))
         if kind=='load':
+            from library_manager import identity
+            actual=identity(directory/name)
+            if payload.get('file_identity') is not None and actual!=payload['file_identity']:raise ValueError('Saved loop changed; refresh')
             loaded=read_envelope(directory/name)
             archived='song-'+uuid.uuid4().hex+'.json';atomic_write(directory/archived,payload['current'],True)
             return dict(kind=kind,name=name,revision=payload['revision'],request_token=payload['request_token'],payload=loaded,archived=archived)
@@ -433,17 +436,17 @@ class LoopModel:
         self.writer.task('list')
     def cancel_replacement(self):
         self.replacement_request=None;self.new_revision=None;self.loading_revision=None
-    def _request_replacement(self,kind,name=None):
+    def _request_replacement(self,kind,name=None,file_identity=None):
         if self.pending:raise ValueError('stop and drain captured notes before replacing song')
         if not self.writer:raise RuntimeError('persistence unavailable')
         token=self.replacement_serial+1
-        payload=dict(revision=self.revision,current=self.payload(),request_token=token)
+        payload=dict(revision=self.revision,current=self.payload(),request_token=token,file_identity=file_identity)
         # Only accepted jobs supersede earlier requests; queue-full is a no-op.
         self.writer.task(kind,payload,name)
         self.replacement_serial=token;self.replacement_request=(token,kind)
         self.new_revision=self.revision if kind=='archive' else None
         self.loading_revision=self.revision if kind=='load' else None
-    def request_load(self,name):self._request_replacement('load',name)
+    def request_load(self,name,file_identity=None):self._request_replacement('load',name,file_identity)
     def request_new(self):self._request_replacement('archive')
     def poll_tasks(self):
         results=[]

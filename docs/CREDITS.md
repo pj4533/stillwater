@@ -9,8 +9,8 @@ binary is distributed.
 |---|---|
 | Display framing/XOR/control numbers | Federico Pepe, MIT, Push Hack revision ce412f54065b89ff6f341c588e35dccec7cc0bda; [NOTICE](../NOTICE), [full license](../LICENSE.push-hack) |
 | DSP/scheduler | Original standard-algorithm implementation; no third-party DSP source copied |
-| Source PNG/prepared art | Original image-generation-tool output plus original conversion/animation code; MIT; [V2 provenance](../assets/v2/README.md), [V3 material preparation](../assets/v3/README.md), [legacy provenance](../assets/README.md) |
-| Preview media | Synthetic production-renderer output, not a device camera or vendor photo |
+| Source PNG/prepared art | Original image-generation-tool output plus original conversion/animation code; MIT; [V2 provenance](../assets/v2/README.md), [V4 material preparation](../assets/v4/README.md), [legacy provenance](../assets/README.md) |
+| Preview media | Actual V4 test-display pixels and synthetic production-renderer output; see [MEDIA](MEDIA.md); no vendor photo |
 
 [Ambient Town](https://frontier.every.to/experiments/ambient-town) by **Kieran
 Klaassen** inspired approachable ambient workflow and previewable agent controls.

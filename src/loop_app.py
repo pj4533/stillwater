@@ -17,30 +17,26 @@ from loop_model import LoopModel,pad_pitch,json_ready,MODES,PITCH_NAMES
 from roles import ROLE_IDS,ROLE_PALETTE
 from loop_engine import LoopEngine,LoopPerformance
 from loop_export import LoopExport
-from loop_graphics import render
+from loop_graphics import render,preload
+from library_manager import LibraryManager
+from v4_controls import ManagementUI
 
-class LoopInstrument:
-    def __init__(self,model,engine,bottle=None,recorder=None,export=None):
+class LoopInstrument(ManagementUI):
+    def __init__(self,model,engine,bottle=None,recorder=None,export=None,manager=None):
         self.model=model;self.engine=engine;self.performance=LoopPerformance(model,engine)
         self.bottle=bottle;self.recorder=recorder;self.export=export
         self.exit=False;self.return_stock=False;self.gear=None;self.gear_current=True;self.shift=False;self.help=False
-        self.library=None;self.library_index=0;self.transition=None;self.film_attempted=False
+        self.library=None;self.library_index=0;self.transition=None
+        self.init_management(manager)
         model.view='instrument'
     def snapshot(self):
         m=self.model
-        return dict(revision=m.revision,state=json_ready(m.state),selected=m.selected,overdub=m.overdub,octave=m.octave,view=m.view,pending=len(m.pending),structural=self.performance.structural is not None,dirty=m.dirty,durable_revision=m.writer.durable_revision if m.writer else None,message=m.message,undo=len(m.undo_stack),redo=len(m.redo_stack))
+        return dict(revision=m.revision,state=json_ready(m.state),selected=m.selected,overdub=m.overdub,octave=m.octave,view=m.view,pending=len(m.pending),structural=self.performance.structural is not None,dirty=m.dirty,durable_revision=m.writer.durable_revision if m.writer else None,message=m.message,undo=len(m.undo_stack),redo=len(m.redo_stack),management=self.manager_status())
     def received(self,events,now):
         self.gear_current=events==[]
         for event in events or []:
             if event['kind']=='cc' and event['channel']==0 and event['number']==30:
                 self.gear=now if event['value'] else None;event['received']=True
-    def auto_film(self):
-        if self.film_attempted:return
-        self.film_attempted=True
-        try:
-            if not self.recorder:raise ValueError('Video unavailable')
-            self.recorder.start()
-        except (ValueError,RuntimeError) as exc:self.model.message='NO VIDEO: '+str(exc)
     def invalidate_library(self):
         self.transition=None;self.model.cancel_replacement()
     def wire(self,event):
@@ -49,10 +45,14 @@ class LoopInstrument:
         # View changes may pass a pending operation. All musical input waits
         # for ordered cancel acknowledgment; an apply that won is committed by
         # drain first. MidiDispatch retains the original event in order.
-        view_cc={49,30,112,110,50,51,58,81,113}
+        view_cc={49,30,112,110,50,51,58,81,113,82}
+        if self.model.view=='overview':view_cc.update((20,21,27))
+        if self.model.view in ('library','recordings','key'):
+            view_cc.update(range(20,28));view_cc.update(range(71,79));view_cc.update(range(102,110));view_cc.update((62,63,118))
+        if self.shift:view_cc.add(86)
         if not self.shift:view_cc.add(92)
         if self.library is None and self.model.view!='chooser':view_cc.update(range(102,110))
-        musical=event['kind'] in ('note','note_off','pressure','poly_pressure') or (event['kind']=='cc' and event['number'] not in view_cc and event['value'])
+        musical=self.manager_mutation(event) or event['kind'] in ('note','note_off','pressure','poly_pressure') or (event['kind']=='cc' and event['number'] not in view_cc and event['value'])
         if musical and self.performance.structural:
             if event['kind']=='cc' and event['number']==119:
                 self.performance.cancel_structural();return True
@@ -65,13 +65,13 @@ class LoopInstrument:
         elif kind in ('note','note_off','pressure','poly_pressure'):
             if kind=='note' and value:
                 self.invalidate_library()
-                if self.performance.transport:self.auto_film()
             self.performance.wire(event)
         elif kind=='cc' and event['channel']==0:
             self.event(number,value)
         return True
     def event(self,number,value):
         m=self.model;p=self.performance;delta=relative(value);before=m.state
+        if self.management_event(number,value,delta):return
         if number==49:self.shift=bool(value);return
         if number==30:self.gear=time.monotonic() if value else None;return
         if number==79:m.set_master(max(0,min(1,m.state.master+delta*.01)));m.message='MASTER OUTPUT '+str(round(m.state.master*100))+'%'
@@ -96,24 +96,21 @@ class LoopInstrument:
         elif value:
             if number==85:
                 self.invalidate_library()
-                if not p.transport:self.auto_film()
                 p.play();m.message='PLAY A NOTE TO ANCHOR LOOP' if p.transport==1 else 'LOOP RUNNING' if p.transport else 'STOPPED'
             elif number==29:p.stop();m.message='STOPPED'
-            elif number==112:m.view='instrument' if m.view=='mixer' else 'mixer';self.library=None;m.message='MIX / ENCODERS SET LAYER LEVELS'
+            elif number==112:self.open_page('instrument' if m.view=='mixer' else 'mixer');m.message='MIX / ENCODERS SET LAYER LEVELS'
             elif number in (110,50):
                 if number==50 and self.shift:m.overdub=not m.overdub;m.message='OVERDUB ON' if m.overdub else 'AUDITION / NOTES NOT RECORDED'
-                else:m.view='instrument';self.library=None
-            elif number==51:
-                if self.shift:m.request_library();m.message='READING SONG LIBRARY'
-                else:m.view='overview';self.library=None
+                else:self.open_page('instrument')
+            elif number==51:self.open_page('library');m.message='LOOP LIBRARY / SELECT THEN LOAD'
             elif number==92:
                 if self.shift:p.stop();self.transition=('new',None);m.message='ARCHIVING / NEW SONG'
-                else:m.view='chooser';self.library=None;m.message='CHOOSE A ROLE / RECORD NOTES TO UNLOCK'
-            elif number==58:m.view='key';self.library=None;m.message='ENCODER 1 ROOT / ENCODER 2 MODE'
+                else:self.open_page('chooser');m.message='CHOOSE A ROLE / RECORD NOTES TO UNLOCK'
+            elif number==58:self.open_page('key');m.message='CHOOSE ROOT / MODE THEN APPLY'
             elif number==56:p.extend()
             elif number==118:self.invalidate_library();p.clear();m.message='LAYER CLEARED / UNDO TO RESTORE'
             elif number==113:
-                m.view='overview';self.library=None;m.message='LOOP / ENCODER 1 BPM / REPEAT ADDS BAR'
+                self.open_page('overview');m.message='LOOP / ENCODER 1 BPM / REPEAT ADDS BAR'
             elif number==119:
                 self.invalidate_library()
                 if p.undo(self.shift):m.message='REDO' if self.shift else 'UNDO'
@@ -131,7 +128,9 @@ class LoopInstrument:
             elif 20<=number<=27:
                 index=number-20
                 if m.view=='overview':
-                    if index==6:p.extend()
+                    if index==0:self.open_page('library')
+                    elif index==1:self.open_page('recordings')
+                    elif index==6:p.extend()
                     elif index==7:
                         if not self.export:raise ValueError('Loop export unavailable')
                         self.export.request(m.revision,bool(m.pending) or bool(p.structural));m.message='EXPORT NEXT COMPLETE LOOP'
@@ -149,10 +148,7 @@ class LoopInstrument:
                     self.bottle.request(30);m.message='BOTTLING LAST 30 SECONDS'
                 else:m.request_save()
             elif number==86:
-                if self.shift:
-                    if not self.recorder:raise ValueError('Video unavailable')
-                    if self.recorder.snapshot()['state']=='recording':self.recorder.stop();m.message='SAVING FILM / MUSIC CONTINUES'
-                    else:self.recorder.start();m.message='RECORDING FILM'
+                if self.shift:self.open_page('recordings')
                 else:m.overdub=not m.overdub;m.message='REC ON / NOTES RECORD' if m.overdub else 'AUDITION / NOTES NOT RECORDED'
             elif number==81:self.help=not self.help
         if m.state!=before:
@@ -163,6 +159,10 @@ class LoopInstrument:
         if op in ('record_start','record_stop','record_status','record_recover'):return self.recorder.execute(request)
         if op in ('request_capture','query_capture_status'):return self.bottle.execute(request)
         if op=='status':return self.snapshot()
+        if op=='manager_open':
+            if set(request)!={'op','page'}:raise ValueError('Invalid manager fields')
+            self.open_page(request['page']);return self.snapshot()
+        if op=='manager_status':return self.manager_status()
         if not self.engine.lib.sw_loop_ready():raise ValueError('Audio commands busy / retry')
         if op=='event':
             event=dict(kind=request['kind'],channel=request.get('channel',0),number=request['number'],value=request['value'])
@@ -175,18 +175,19 @@ class LoopInstrument:
         else:raise ValueError('V2 uses status / event / set_master / recording / capture / export_loop')
         return self.snapshot()
     def tick(self):
-        self.performance.drain();m=self.model
+        self.performance.drain();self.management_tick();m=self.model
         if self.engine.lib.sw_loop_ready():
             if self.transition and not m.pending and not self.engine.loop_stats()['held']:
                 kind,name=self.transition;self.transition=None
                 if kind=='new':m.request_new()
-                else:m.request_load(name)
+                else:m.request_load(name['id'],name['identity']) if isinstance(name,dict) else m.request_load(name)
             before=m.state
             for result in m.poll_tasks():
                 if result['kind']=='list' and not result.get('error'):self.library=result['names'];self.library_index=0
-                if result.get('applied'):self.film_attempted=False;self.library=None
+                if result.get('applied') and m.view=='library':self.refresh_manager()
+                elif result['kind']=='snapshot' and not result.get('error') and m.view=='library':self.refresh_manager()
             if m.state!=before:
-                self.engine.transport(0,m.overdub,m.capture_epoch);self.engine.publish(m.state,m.capture_epoch);self.performance.slots=[None]*8;self.performance.transport=0;self.film_attempted=False
+                self.engine.transport(0,m.overdub,m.capture_epoch);self.engine.publish(m.state,m.capture_epoch);self.performance.slots=[None]*8;self.performance.transport=0
         if self.gear_current and self.gear is not None and time.monotonic()-self.gear>=2:self.exit=True;self.return_stock=True
     def close(self):
         # Silence before worker/filesystem waits. sw_stop drains the queued Stop
@@ -198,7 +199,7 @@ class LoopInstrument:
             pcm=(C.c_float*2)();self.engine.lib.sw_render(pcm,1)
         self.performance.drain()
         deadline=time.monotonic()+2
-        for worker in (self.recorder,self.bottle,self.export):
+        for worker in (self.recorder,self.bottle,self.export,self.manager):
             if worker:worker.close(timeout=max(0,deadline-time.monotonic()))
         self.model.checkpoint(True)
         if not self.model.close(timeout=max(0,deadline-time.monotonic())):
@@ -209,7 +210,7 @@ class LoopInstrument:
 def led_values(model,stats,instrument):
     desired={('cc',112):127 if model.view=='mixer' else 10,('cc',86):127 if model.overdub else 0,
              ('cc',81):127 if instrument.help else 10,('cc',85):126 if stats['loop']['transport'] else 4,
-             ('cc',50):127 if model.view=='instrument' else 10,('cc',51):127 if model.view=='overview' else 10,
+             ('cc',50):127 if model.view=='instrument' else 10,('cc',51):127 if model.view=='library' else 10,
              ('cc',58):127 if model.view=='key' else 10,('cc',56):127 if model.state.loop_beats<32 else 0,
              ('cc',113):127 if model.view=='overview' else 10,('cc',118):10}
     for i in range(8):
@@ -221,26 +222,29 @@ def led_values(model,stats,instrument):
             desired['cc',102+i]=palette[0] if i==model.selected else palette[2]
         desired['cc',20+i]=0 if i>=len(model.state.layers) else ROLE_PALETTE[model.state.layers[i].role][2 if model.state.layers[i].muted else 1]
     if model.view=='overview':
-        for i in range(8):desired['cc',20+i]=10 if i in (6,7) else 0
+        for i in range(8):desired['cc',20+i]=10 if i in (0,1,6,7) else 0
     elif model.view in ('key','chooser'):
         for i in range(8):desired['cc',20+i]=0
-    held={s['pad']:stats['manual'][index].get('pressure',0) for index,s in enumerate(instrument.performance.slots) if s and s['held'] and stats['manual'][index]['token']==s['token'] and stats['manual'][index]['held']}
+    active=instrument.pitch_lights.colors(model,stats)
     palette=ROLE_PALETTE[model.state.layers[model.selected].role]
     for n in range(36,100):
         pitch=pad_pitch(n,model.octave,model.state.root,model.state.scale)
-        desired['note',n]=120 if held.get(n,0)>.5 else palette[0] if n in held or pitch%12==model.state.root%12 else 123 if pitch%12 in (0,2,4,5,7,9,11) else palette[2]
+        desired['note',n]=ROLE_PALETTE[active[pitch]][0] if pitch in active else palette[1] if pitch%12==model.state.root%12 else 123 if pitch%12 in (0,2,4,5,7,9,11) else palette[2]
+    if model.view in ('library','recordings','key'):
+        for i in range(8):desired['cc',102+i]=10;desired['cc',20+i]=10
     return desired
 
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--home',type=Path,default=Path('/data/push-ambient'));parser.add_argument('--offline',action='store_true');parser.add_argument('--midi-tap-seconds',type=float,default=0);parser.add_argument('--midi-tap-count',type=int,default=256);args=parser.parse_args()
-    home=args.home;home.mkdir(parents=True,exist_ok=True);os.umask(0o077)
+    home=args.home;home.mkdir(parents=True,exist_ok=True);os.umask(0o077);preload()
     model=LoopModel(home/'sessions/current-v3.json',legacy=home/'sessions/current.json')
     engine=LoopEngine(home/'engine.so',None if args.offline else 'hw:A3,0')
     bottle=Bottle(engine,home/'recordings');export=LoopExport(engine,home/'recordings')
     prefix=[] if Path('/lib64/ld-linux-x86-64.so.2').exists() else ['/lib/ld-linux-x86-64.so.2']
     recorder=SessionRecorder(engine,home/'recordings',ffmpeg=prefix+[str(home/'tools/ffmpeg')],ffprobe=prefix+[str(home/'tools/ffprobe')])
-    instrument=LoopInstrument(model,engine,bottle,recorder,export);display=midi=None;stop=threading.Event();requests=queue.Queue(16);dispatch=MidiDispatch();frames=events=0;lastframe=laststatus=lastpower=0;render_max=render_ms=0;leds={}
+    manager=LibraryManager(home,recorder,bottle,export)
+    instrument=LoopInstrument(model,engine,bottle,recorder,export,manager);display=midi=None;stop=threading.Event();requests=queue.Queue(16);dispatch=MidiDispatch();frames=events=0;lastframe=laststatus=lastpower=0;render_max=render_ms=0;leds={}
     tap=EventTap(args.midi_tap_seconds,args.midi_tap_count) if args.midi_tap_seconds else None
     def end(*unused):instrument.exit=True
     signal.signal(signal.SIGTERM,end);signal.signal(signal.SIGINT,end)

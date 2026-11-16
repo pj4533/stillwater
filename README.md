@@ -1,78 +1,143 @@
+<div align="center">
+
 # Stillwater
 
-An independent ambient instrument for **Ableton Push 3 Standalone**. Play the
-first note to anchor a one-bar loop. Repeat grows it up to eight bars; build up
-to eight different native sound layers. The display is an animated, original organic machine; every pad
-remains a scale note in every view. Choose the root and seven modes on KEY.
+**A small ambient instrument. Eight sound worlds. One growing loop.**
 
-![Eight sound worlds, rendered locally](docs/media/role-contact.png)
+An independent, open-source instrument for **Ableton Push 3 Standalone**.
+Custom sound, custom screen, running on the device.
 
-Stillwater runs its own C audio engine and Python hardware interface on the
-existing AbletonOS. It is not an Ableton product or a plugin. Installation is an
-advanced, root-access hardware modification: read the complete
-[installation and recovery guide](docs/INSTALL.md) before changing a device.
-No Ableton software, firmware, device backup, user song or recording is included.
+![Stillwater V4 — actual Push display capture](docs/media/v4-device-prism.png)
 
-- Eight distinct sources/effect buses: **Silt, Filament, Glass, Choir, Oxide,
-  Backwash, Spore, Prism**; eight live macros per sound, separate mixer and master.
-- Deterministic Silt first layer, performed velocity/duration capture, Record
-  toggles overdub/audition without restarting; Shift+Record controls films.
-- Progressive unique role chooser, root/mode changes across all layers, Clear,
-  boundary-safe Add Bar and length Undo/Redo,
-  asynchronous autosave and no-overwrite song library.
-- Actual screen+stereo performance film, exact next-loop WAV export and a
-  retrospective 30-second Bottle capture.
-- Local Unix-socket control for external tools/agents; no onboard language
-  model, voice assistant, cloud requirement or network listener.
-- Quiet bounded same-app recovery, with a deliberate return to stock software.
+*Actual V4 display pixels from a scripted, isolated device test. Not a camera photograph.*
 
-[Controls](docs/CONTROLS.md) · [Install/recover](docs/INSTALL.md) ·
-[Develop/test](docs/DEVELOPMENT.md) · [Architecture](docs/ARCHITECTURE.md) ·
-[Agent interface](docs/AGENT_API.md) · [Licenses/credits](docs/CREDITS.md)
+[Get started](#play-a-little) · [Install](docs/INSTALL.md) · [Controls](docs/CONTROLS.md) · [Develop](docs/DEVELOPMENT.md) · [Agent guide](AGENTS.md)
 
-## Try the engine without hardware
+</div>
 
-On Linux with Python 3.11+ and a C11 compiler:
+Stillwater turns the pad grid into a looping ambient instrument. Press Play and
+play a note to anchor a one-bar phrase. Add another layer, shape its material,
+and let the loop grow. Every pad stays a scale note, including while browsing
+songs or recordings. The screen’s little vessels fill with each macro value;
+their texture moves with the real sound. Notes from every layer light the pads
+in that sound’s color.
+
+Python handles the screen, controls and local files. An original C engine makes
+the sound and schedules notes. No computer, cloud account, subscription, onboard
+language model or network listener is needed during play.
+
+## Eight worlds to play
+
+**Silt · Filament · Glass · Choir · Oxide · Backwash · Spore · Prism**
+
+Eight distinct sources and effect buses, with eight live macros per sound:
+subtractive warmth, plucked filaments, glassy FM, formants, tape, reverse,
+grains and modal shimmer. Build up to eight layers, mix them independently,
+and shape held notes with pressure.
+
+![Native renderer animation with fixed macros and real DSP telemetry](docs/media/v4-prism.gif)
+
+*Silent GIF: synthetic production-renderer preview, fixed macros, native playback
+then Stop. No physical performance is implied. [Media provenance](docs/MEDIA.md).*
+
+## Play a little
+
+| Control | What happens |
+|---|---|
+| **Play + a pad** | Start a fresh one-bar loop from your first note |
+| **Record** | Toggle note overdub / audition without restarting playback |
+| **New** | Choose another available sound; **Shift+New** archives and starts fresh |
+| **Repeat** | Add a bar at the next safe loop boundary, up to eight bars |
+| **Note / Device · Mix** | Shape eight macros · balance layer levels |
+| **Scale** | Choose root and one of seven modes; explicitly Apply or Cancel |
+| **Session · Save** | Browse, load, rename or delete snapshots · save a new snapshot |
+| **Shift+Record** | Open RECORDINGS; explicitly START FILM or STOP+SAVE |
+| **Clip · Shift+Save** | Loop tempo/exact-loop WAV · Bottle the last available 30 seconds |
+| **Undo / Shift+Undo** | Undo / redo music edits |
+| **Stop Clips · Volume** | Silence immediately · global master |
+| **Hold Settings 2 seconds** | Deliberately return to stock software |
+
+Film is **off by default**. Playing or recording notes never starts a film.
+Films capture actual screen pixels and native stereo output, not a microphone.
+Recordings stay local; SAVED offers details, explicit recovery and confirmed
+deletion, including a film’s large raw bundle. Music continues while a film
+finishes encoding. [Full controls and data management](docs/CONTROLS.md).
+
+![V4 key picker](docs/media/v4-device-key.png)
+
+*Actual test-device display: preview a key before applying it to every layer.*
+
+## Build and try without hardware
+
+On Linux with Python 3.11+, a C11 compiler and the dependencies in
+[Development](docs/DEVELOPMENT.md):
 
 ```sh
+git clone https://github.com/pj4533/stillwater.git
+cd stillwater
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements-dev.txt
 sh scripts/build.sh
-python3 -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -q
+python3 scripts/rehearse-v4.py
 ```
 
-Install FFmpeg/ffprobe and `python3 -m pip install -r requirements-dev.txt` for
-media tests, artwork conversion and the full offline workflow:
+The rehearsal uses production DSP, renderer, control parser and file workers in
+a disposable home. With host FFmpeg/ffprobe installed it creates and validates
+a synthetic film. It opens no ALSA output, USB display or physical MIDI port,
+and plays nothing through speakers. Generated files stay in ignored `.build/`.
 
-```sh
-python3 scripts/rehearse-v3.py
-```
+## Install on Push
 
-This creates synthetic songs and renders production DSP/graphics to `.build/`;
-it opens no ALSA audio output, USB display or physical MIDI port. It does not
-play through speakers. [Development](docs/DEVELOPMENT.md) explains dependencies,
-outputs, cross-building and a separate full-entry smoke check.
+Installation requires **Push 3 Standalone**, existing authorized root SSH access,
+a compatible x86_64 build, pinned host identity and a verified private backup.
+Read the complete [installation, recovery and removal guide](docs/INSTALL.md)
+before touching hardware. It covers dependencies, paired ABI4 source/native/art,
+fresh payload preparation, boot ownership, rollback and deliberate stock return.
+No vendor firmware, SSH enrollment, device backup or encoder binary is included.
+
+Songs and history live under `/data/push-ambient/sessions/`; films, loop WAVs and
+Bottle WAVs under `/data/push-ambient/recordings/`. Back these up privately.
+Nothing uploads automatically. Uninstall only after returning to stock and
+preserving your data, following [the removal instructions](docs/INSTALL.md#recovery-and-uninstall).
+
+## Build on it
+
+[Architecture](docs/ARCHITECTURE.md) explains native scheduling, ownership and
+persistence. [Development](docs/DEVELOPMENT.md) covers builds, tests, artwork,
+rehearsals and cross-compilation. [AGENTS.md](AGENTS.md) is the coding-agent
+onboarding guide. External tools can query and control the local Unix socket
+through the [agent API](docs/AGENT_API.md); there is no onboard AI assistant.
+[Release contents](docs/EXPORT.md) and manifests describe the reproducible snapshot.
 
 ## Compatibility and limits
 
-Verified hardware is Push 3 **Standalone**, with Push 2.3.5b1 / Live 12.3.5b1
-beta retained on the tested installation. This does not establish compatibility
-with every current or future firmware, Push 2, controller-only Push 3, desktop
-Live or other audio devices. No firmware downgrade/update is part of this project.
+Verified on Push 3 **Standalone** retaining Push 2.3.5b1 / Live 12.3.5b1 beta.
+This is an experimental hardware modification and an independent project;
+it is not affiliated with, endorsed by or supported by Ableton. Compatibility
+with other firmware, Push 2, controller-only Push 3 or desktop Live is unverified.
+Installation does not replace AbletonOS or change firmware.
 
-One shared loop: new songs start at4beats/one bar; Repeat adds one bar at a native
-boundary up to32beats/eight bars. Imported V2 songs preserve16beats/four bars and
-exact notes, full Undo/Redo and sound parameters. Eight layers,256events per layer,
-64 global playback voices plus eight manual voices and eight brief steal tails.
-Held capture ends after at most one loop. No input recording, arrangement timeline,
-plugin host, imported step-song conversion or calibrated full MPE. Library names
-are generated rather than typed on-device. Films require working FFmpeg/ffprobe
-and storage; limits are 30 minutes and a 512MB free-space reserve.
+One shared loop, up to eight bars, eight layers, 256 events per layer, 64 global
+playback voices and eight manual voices. Existing V2 songs retain their original
+four bars and history. No input recording, plugin hosting, arrangement timeline
+or calibrated full MPE. Films need FFmpeg and substantial temporary space
+(about 207 MB/minute raw), stop at 30 minutes and preserve a 512 MiB reserve.
+There is no automatic media pruning.
 
-Automated offline and hardware checks covered controls, ownership, persistence,
-codec/sample alignment and timing. They do not claim human listening approval,
-universal hardware safety, vendor support or a security audit. The sanitized
-snapshot deliberately excludes private deployment history and personal data.
+V4 passed automated local tests and 28 isolated actual-device checks; the normal
+service remained healthy for 60 seconds afterward. Scripted inputs and PCM
+measurements do not establish physical pad feel, perceived hues, human listening
+approval or universal compatibility. Start with speaker/headphone levels low.
 
-Original code and artwork are provided under [MIT](LICENSE), with retained
-[hardware-protocol attribution](NOTICE) and [third-party license](LICENSE.push-hack).
-The artwork was generated with an image-generation tool, then prepared and animated
-by original renderer code. FFmpeg is obtained separately under its own license.
+## Credits and license
+
+Inspired by **[Ambient Town — Kieran Klaassen](https://ambient.town/)** and the
+peculiar material worlds of **[Freakshow Industries](https://freakshowindustries.com/)**.
+Original implementation and artwork; no code or product art copied from either.
+
+Original code and image-tool-generated original artwork: [MIT](LICENSE).
+Hardware-protocol adaptation: [Push Hack attribution](NOTICE) and
+[MIT notice](LICENSE.push-hack). Dependencies and separately obtained FFmpeg
+retain their own licenses. [Full credits and provenance](docs/CREDITS.md).

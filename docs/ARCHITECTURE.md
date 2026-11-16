@@ -2,7 +2,7 @@
 
 `src/app.py` launches `loop_app.py` by default. One app owns the ALSA engine,
 MIDI reader, USB display, Unix IPC socket and film/export workers. Legacy classes
-remain for shared infrastructure/regression tests; V3 imports validated V2
+remain for shared infrastructure/regression tests; V4 imports validated V2
 performed songs and history, preserving legacy step-song files. The supervisor starts one app or audio-free recovery child under
 a singleton lock and PID/start-identity registry. No onboard inference process,
 voice listener or network server exists.
@@ -44,10 +44,10 @@ playback voices, eight brief steal tails and256events/layer bound work. Macros
 smooth continuously on held/tail sources and buses; layer gain applies once
 post-bus, followed by smoothed mute/master and output limiting.
 
-`sessions/current-v3.json` uses envelope2/song schema2. When absent, V3 validates
+`sessions/current-v3.json` uses envelope2/song schema2. When absent, V4 validates
 and imports latest current-v2 state, revision and all history, preserving exact
 notes/timing/velocity/roles/parameters/master. Missing V2 length means16beats,
-while fresh V3 defaults to4beats. Unknown newer or invalid history fails startup
+while fresh V4 defaults to4beats. Unknown newer or invalid history fails startup
 without blank overwrite. V2/legacy/library/recording bytes remain untouched.
 Undo/redo
 share64snapshots. A coalescing one-slot autosave worker and bounded jobs keep
@@ -57,13 +57,19 @@ replacement and uses a monotonic accepted-request token plus revision/pending
 checks. Playing/editing cancels replacement. Shutdown silences before bounded
 persistence/media finalization.
 
-Loop bank ABI3 is checked before history/ALSA setup. Length changes use a single
+Loop bank ABI4 is checked before history/ALSA setup. Length changes use a single
 guarded bank/token, validating epoch/activity and no held/unacknowledged takes or
 pending tempo at admission and the old native boundary. Bank/length apply
 atomically; model/history commits after acknowledgment. Ordered cancellation
 precedes musical input; views pass. Length history uses the same transaction.
 Stop settles desired tempo and clears pending tempo. New notes use onset-owned
 recording intent; Record never changes transport or phase.
+
+V4 adds ABI4 all-layer absolute-pitch gate/onset telemetry for role-colored pad
+feedback. LibraryManager serializes inventory, rename, confirmed identity-pinned
+load/delete and raw film recovery/cleanup away from input/audio threads. The
+KEY draft commits only on Apply; leaving cancels. Musical recording and film
+recording are independent; film defaults off.
 
 ## Media/display
 
@@ -99,4 +105,4 @@ software. Hardware failure can prevent the recovery display itself.
 Source-derived art uses17macro geometries and five independently envelope-gated
 audio poses. Runtime only copies bounded rows; all visited role pose caches total
 44,564,480bytes. Eight organically dimmed working backgrounds keep real Mix/LOOP
-data readable and empty channels clear. See assets/v3/README.md for format.
+data readable and empty channels clear. See assets/v4/README.md for format.

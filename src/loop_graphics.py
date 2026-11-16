@@ -5,6 +5,7 @@ from pathlib import Path
 from graphics import Canvas,COLORS,INK,BRASS,DARK
 from roles import ROLE_IDS,MACROS,ROLE_RGB
 from loop_model import TICKS,PITCH_NAMES,MODES
+from management_graphics import key_page,manager_page,film_label
 ASSETS=Path(__file__).resolve().parents[1]/'assets'/'v2'
 
 @lru_cache(maxsize=8)
@@ -18,16 +19,21 @@ def background(role):
 
 @lru_cache(maxsize=8)
 def poses(role):
-    data=(ASSETS.parent/'v3'/(role+'.poses')).read_bytes()
+    data=(ASSETS.parent/'v4'/(role+'.poses')).read_bytes()
     if len(data)!=8*17*5*64*64*2:raise ValueError('Invalid V3 mechanism poses')
     return data
 
 
 @lru_cache(maxsize=8)
 def working_background(role):
-    data=(ASSETS.parent/'v3'/(role+'.working')).read_bytes()
+    data=(ASSETS.parent/'v4'/(role+'.working')).read_bytes()
     if len(data)!=1024*160*2:raise ValueError('Invalid V3 working background')
     return data
+
+
+def preload():
+    """Startup-only asset reads; page changes and frames use immutable caches."""
+    for role in ROLE_IDS:background(role);poses(role);working_background(role)
 
 
 def material(c,base,role,parameters,envelope,fx,seconds):
@@ -45,12 +51,20 @@ def material(c,base,role,parameters,envelope,fx,seconds):
         for y in range(64):
             start=((48+y)*1024+x)*2
             c.pixels[start:start+128]=data[offset+y*128:offset+(y+1)*128]
+        # Fixed physical endstops; the exact seam is independent of audio pose.
+        rgb=ROLE_RGB[role];left=i*120+40;front=108-round(56*value)
+        for yy,label in ((52,'100'),(108,'0')):
+            c.rect(left-4,yy-1,48,3,(7,14,13));c.rect(left-4,yy,48,1,BRASS)
+            c.text(i*120+8,yy-3,label,INK)
+        c.rect(left-4,80,5,1,BRASS)
+        c.rect(left-1,front-1,42,4,(7,14,13));c.rect(left,front,40,2,rgb)
+        c.rect(left+40,front-2,5,6,rgb)
 
 
 def render(model,stats,instrument=None):
     selected=model.state.layers[model.selected];role=selected.role
     view=getattr(model,'view','instrument')
-    base=working_background(role) if view in ('overview','mixer') else background(role);c=Canvas(base)
+    base=working_background(role) if view in ('overview','mixer','library','recordings','key') else background(role);c=Canvas(base)
     loop=stats.get('loop',{});fx=stats.get('fx',[[0,0,0]]*8)[model.selected]
     if view=='instrument':
         envelope=max(fx[0],stats.get('envelopes',[0]*8)[model.selected])
@@ -65,11 +79,8 @@ def render(model,stats,instrument=None):
             c.text(x,78,'FOUNDATION' if r in ('silt','oxide','spore') else 'MID' if r in ('choir','filament','glass') else 'ACCENT',BRASS)
             c.text(x,103,'USED' if state=='USED' else 'CHOOSE' if state=='READY' else 'LOCKED',INK,2)
             c.text(x,128,'TOP BUTTON' if state=='READY' else 'REC BASE' if state=='RECORD FOUNDATION' else 'REC MID' if state=='RECORD MID LAYER' else 'IN SONG',BRASS)
-    elif view=='key':
-        c.rect(0,45,960,115,(7,14,13))
-        c.text(12,53,'ROOT',BRASS,2);c.text(12,80,PITCH_NAMES[model.state.root%12],ROLE_RGB[role],4)
-        c.text(136,53,'MODE',BRASS,2);c.text(136,80,model.state.scale.upper(),INK,3)
-        c.text(12,125,'ENCODER 1 ROOT / ENCODER 2 MODE / ALL LAYERS FOLLOW',BRASS,2)
+    elif view=='key':key_page(c,model,instrument,ROLE_RGB[role])
+    elif view in ('library','recordings') and instrument:manager_page(c,model,instrument,stats.get('recording',instrument.recorder.snapshot() if instrument.recorder else {}))
     elif view=='overview':
         c.text(6,49,str(round(loop.get('tempo',model.state.tempo))),ROLE_RGB[role],4)
         c.text(80,53,'BPM',INK,2);c.text(126,49,str(model.state.loop_beats//4)+' BAR',BRASS,3)
@@ -106,14 +117,14 @@ def render(model,stats,instrument=None):
         for i,(name,value) in enumerate(zip(names,selected.parameters)):
             c.text(i*120+5,121,name,INK,2);c.text(i*120+5,141,str(round(value*100))+'%',BRASS,2)
     c.text(5,4,'STILLWATER',INK,2);c.text(140,4,str(model.selected+1)+' '+role.upper(),ROLE_RGB[role],2)
-    mode='REC' if playing and model.overdub else 'AUDITION' if playing else 'STOPPED REC ARMED' if model.overdub else 'STOPPED AUDITION'
+    mode='NOTES REC' if playing and model.overdub else 'AUDITION' if playing else 'STOPPED REC ARMED' if model.overdub else 'STOPPED AUDITION'
     c.text(350,3,mode,INK,2)
     c.text(690,3,'MASTER OUTPUT',INK);c.text(862,3,str(round(model.state.master*100))+'%',BRASS,2)
     durable='UNSAVED' if model.dirty else 'SAVED'
     if model.writer and model.writer.error:durable='SAVE ERROR'
     c.text(6,21,f'{len(model.state.layers)}/8 {PITCH_NAMES[model.state.root%12]} {model.state.scale.upper()} {int(model.state.tempo)} BPM {model.state.loop_beats//4} BAR {durable}',INK)
     record=stats.get('recording',{});export=stats.get('export',{})
-    status='FILM '+record.get('state','idle').upper()+'  LOOP '+export.get('state','idle').upper()
+    status=film_label(record)+' / WAV '+export.get('state','idle').upper()
     if instrument and instrument.library is not None:
         names=instrument.library;status='LIBRARY '+(names[instrument.library_index] if names else 'NO SAVED SONGS')
     c.text(440,21,status[:69],BRASS)
@@ -122,11 +133,18 @@ def render(model,stats,instrument=None):
     if loop.get('op_token'):message='ADD BAR / REPEAT FIRST BAR / AT NEXT LOOP'
     c.text(5,33,message[:80],INK)
     if view=='overview':
+        c.rect(0,139,240,21,(7,14,13));c.text(6,141,'LOOPS',BRASS,2);c.text(126,141,'RECORDINGS',BRASS)
         c.rect(720,139,240,21,(7,14,13))
         c.text(726,141,'ADD BAR',BRASS,2);c.text(846,141,'WAV',BRASS,2)
     if instrument and instrument.help:
         # Help intentionally replaces the middle material only; master, brand,
         # mode and all eight current macro values remain visible.
         c.rect(0,31,960,82,(8,13,12))
-        for y,text in ((34,'PLAY: LOOP / STOP  PADS: SONG KEY  VOLUME: MASTER'),(52,'NEW: CHOOSE ROLE   TOP: SELECT   LOWER: MUTE   MIX: LEVELS'),(70,'RECORD: REC ON/OFF   UNDO / SHIFT UNDO: BACK / FORWARD'),(88,'SAVE: SONG   SHIFT RECORD: FILM   CLIP: LOOP / WAV')):c.text(8,y,text,INK,2)
+        context=('SCREEN BUTTONS: MANAGER ACTIONS / PADS STILL PLAY' if view in ('library','recordings') else 'TOP: CHOOSE MODE / ENC 1 ROOT / ENC 2 MODE' if view=='key' else 'NEW: CHOOSE ROLE / TOP: SELECT / LOWER: MUTE / MIX: LEVELS')
+        action=('START FILM / STOP+SAVE / SAVED: DETAILS RECOVER DELETE' if view=='recordings' else 'ENC 1 SELECT / LOAD RENAME DELETE / CONFIRM OR CANCEL' if view=='library' else 'LOWER 26 CANCEL / LOWER 27 APPLY / PADS KEEP ACTIVE KEY' if view=='key' else 'RECORD: NOTES ON/OFF / UNDO / SHIFT UNDO: REDO')
+        for y,text in ((34,'PLAY/STOP: MUSIC / PADS: SONG KEY / VOLUME: MASTER'),(52,context),(70,action),(88,'SAVE: NEW SONG SNAPSHOT / HOLD SETTINGS: STOCK RETURN')):c.text(8,y,text,INK,2)
+    if view=='instrument' and not (instrument and instrument.help):
+        c.rect(0,32,960,13,(7,14,13));c.text(5,34,message[:76],INK)
+        for index,layer in enumerate(model.state.layers):
+            c.text(480+index*60,34,('+' if index==model.selected else ' ')+layer.role,ROLE_RGB[layer.role])
     return bytes(c.pixels)

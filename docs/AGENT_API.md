@@ -46,9 +46,12 @@ a second physical MIDI reader. Pressure follows a manual token; full-MPE slide
 or pitch semantics are not promised. Worker threads must never become another
 audio command producer.
 
-V3 controls use the same event path: CC86 toggles note recording only, Shift49
-plus Record86 controls film, Scale58 opens KEY, Clip113 opens LOOP, Repeat56
-stages Add Bar and Delete118 clears selected notes. KEY encoders71/72 adjust root
-and mode; LOOP encoder71 adjusts BPM. Release Shift after combinations. Query
-pending takes/structural status before edits; a length request may refuse while
-a pad is held. Never retry a non-idempotent Add Bar without checking its result.
+V4 controls use the same event path: CC86 toggles note recording only; Shift49
+plus Record86 opens RECORDINGS. CURRENT top104 / SAVED top105; CURRENT lower20
+starts film and lower21 stops+saves. Scale58 opens KEY; encoders71/72 choose the
+draft and lower27 applies / lower26 cancels. Session51 opens LOOPS; Clip113 opens
+LOOP; Repeat56 stages Add Bar. Delete118 clears selected notes on the instrument,
+but requests confirmation in managers. Physical Delete cannot confirm deletion.
+Send releases and release Shift after combinations. Manager buttons are contextual:
+query status, consult CONTROLS and inspect LoopInstrument before destructive events.
+Never retry non-idempotent edits without checking the result.
