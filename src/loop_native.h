@@ -1,14 +1,14 @@
 /* Original Stillwater V2 event-loop foundation. Included by engine.c so the
  * existing ALSA/history/limiter remain the single output owner. No RT allocation. */
 #define LP_TICKS ((uint64_t)(lp_song.loop_beats?lp_song.loop_beats:4)*96000)
-#define LP_ABI 4
+#define LP_ABI 5
 int sw_loop_abi(void){return LP_ABI;}
 #define LP_EVENTS 256
 #define LP_PLAYBACK 64
 #define LP_ACKS 64
 #define LP_BANKS 3
 struct LoopEvent { uint64_t id; uint32_t start_tick,duration_tick; int32_t pitch; float velocity; };
-struct LoopLayer { int32_t role,count; float level; int32_t muted; float parameters[8]; struct LoopEvent events[LP_EVENTS]; };
+struct LoopLayer { int32_t role,count; float level; int32_t muted,sound_version; float parameters[8]; struct LoopEvent events[LP_EVENTS]; };
 struct SongBank { double tempo; float master; int32_t count,loop_beats,retire_mask; struct LoopLayer layers[8]; };
 struct LoopTake { uint64_t id,epoch; uint32_t start_tick,duration_tick; int32_t layer,pitch,reason,status; float velocity; };
 struct LoopSnapshot { uint64_t sample,origin,phase,cycle,loop_frames,epoch,generation,activity,boundary; double tempo,pending_tempo; int32_t transport,held,pending,captures,rejected,loop_beats,pending_beats; uint64_t op_token,ack_token; int32_t op_status; };
@@ -130,7 +130,7 @@ static int lp_valid_bank(const struct SongBank *bank){
  unsigned roles=0;
  for(int l=0;l<bank->count;l++){
   const struct LoopLayer *layer=&bank->layers[l];
-  if(layer->role<0||layer->role>7||(roles&(1u<<layer->role))||layer->count<0||layer->count>LP_EVENTS||!isfinite(layer->level)||layer->level<0||layer->level>1||(layer->muted!=0&&layer->muted!=1))return 0;
+  if((layer->sound_version!=1&&layer->sound_version!=2)||layer->role<0||layer->role>7||(roles&(1u<<layer->role))||layer->count<0||layer->count>LP_EVENTS||!isfinite(layer->level)||layer->level<0||layer->level>1||(layer->muted!=0&&layer->muted!=1))return 0;
   roles|=1u<<layer->role;
   for(int p=0;p<8;p++)if(!isfinite(layer->parameters[p])||layer->parameters[p]<0||layer->parameters[p]>1)return 0;
   for(int e=0;e<layer->count;e++){

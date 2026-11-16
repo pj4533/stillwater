@@ -2,7 +2,7 @@
 
 This repository contains the complete distributable instrument, with its existing
 public history and MIT/Push Hack notices. It does not import private parent
-repository history. Runtime source is paired with native ABI4 and all eight V4
+repository history. Runtime source is paired with native ABI5 and all eight V4
 material caches; V2 backgrounds and legacy assets remain for shared regression
 code and reproducible artwork. V3 assets remain available for deliberate rollback.
 
@@ -47,3 +47,21 @@ curated tree excluding itself. It contains no private source paths. Fresh archiv
 validation checks native build, Python suite, media, local documentation links,
 payload completeness and source/art identity. Automated tests are not a claim
 of human listening, physical pad feel, universal device safety or security audit.
+
+New layers use gentle sound version 2; existing music retains version 1.
+Song schema 3 requires paired ABI5 and is rejected by older builds. Preserve
+newer sessions before rollback; see [sound compatibility](GENTLE_SOUND.md).
+
+## Gentle update parity
+
+The deployed ABI5 payload contains 86 entries. All 21 core source files and
+all 24 core art caches match it exactly, as do the other shared runtime files.
+Public build/art/preview/benchmark/rehearsal scripts retain portable toolchain
+selection, bundled art inputs and `.build/` output locations. These are deliberate
+packaging differences, not runtime changes. The compiled engine is rebuilt,
+not committed; its allocated ELF sections match the deployed reference.
+Legacy device smoke scripts and older private editorial/QA scripts are excluded:
+they operate historical state or require private captures. The portable gentle
+editor and comparison cover the current reusable offline media workflow without
+private photos, personal recordings, device identities or captured journals.
+No device operation is needed to build or validate this checkout.

@@ -9,10 +9,16 @@ MACROS=(
  ('Strike','Release','Reverse','Window','Seam','Echo','Return','Shade'),
  ('Bow','Tone','Grain','Density','Scatter','Memory','Width','Cloud'),
  ('Strike','Metal','Damping','Glow','Octave','Room','Diffuse','Shade'))
-DEFAULTS=((.3,.5,.45,.2,.55,.3,.1,.25),(.6,.55,.3,.25,.2,.2,.4,.2),
+LEGACY_DEFAULTS=((.3,.5,.45,.2,.55,.3,.1,.25),(.6,.55,.3,.25,.2,.2,.4,.2),
  (.25,.3,.35,.6,.3,.2,.25,.25),(.35,.15,.5,.4,.4,.6,.15,.3),
  (.2,.15,.1,.3,.25,.05,.45,.45),(.5,.5,.5,.4,.6,.2,.2,.5),
  (.5,.45,.4,.25,.2,.3,.45,.3),(.5,.5,.6,.35,.2,.35,.45,.5))
+
+# Version2: quiet source excitation, spacious existing role-specific effects.
+DEFAULTS=((.72,.78,.86,.72,.12,.22,.015,.70),(.40,.90,.50,.25,.65,.65,.60,.70),
+ (.05,.06,.80,.75,.35,.18,.50,.50),(.08,.06,.12,.20,.80,.80,.25,.70),
+ (.08,.20,.06,.65,.60,.00,.55,.80),(.12,.80,.62,.60,.80,.65,.60,.86),
+ (.22,.28,.62,.50,.28,.55,.62,.75),(.12,.10,.25,.38,.20,.70,.70,.86))
 
 # Explicit Push 3 hardware palette entries (bright, medium, dim). Never
 # interpolate palette indices. Source: push-hack hardware_palette.go live dump.

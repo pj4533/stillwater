@@ -1,0 +1,40 @@
+{
+  "scope": "Captured before source edits from ABI4; bitwise comparisons valid only same architecture/compiler/libm",
+  "machine": "aarch64",
+  "compiler": "gcc (Debian 12.2.0-14+deb12u1) 12.2.0",
+  "libc": [
+    "glibc",
+    "2.36"
+  ],
+  "build": "gcc -std=c11 -O2 -Wall -Wextra -Werror -shared -fPIC src/engine.c -lm -lpthread -ldl",
+  "sample_rate": 44100,
+  "channels": 2,
+  "format": "native float32 bytes",
+  "pitch": 62,
+  "velocity": 0.6,
+  "master": 0.28,
+  "level": 0.3,
+  "hold_frames": 88200,
+  "release_frames": 88200,
+  "pre_note_render_frames": 1,
+  "first_role_initial_levels": [
+    0.6,
+    0.36,
+    0.28,
+    0.4,
+    0.24,
+    0.28,
+    0.25,
+    0.22
+  ],
+  "order": [
+    "silt",
+    "filament",
+    "glass",
+    "choir",
+    "oxide",
+    "backwash",
+    "spore",
+    "prism"
+  ]
+}

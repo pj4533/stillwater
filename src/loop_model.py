@@ -69,6 +69,7 @@ class Layer:
     muted:bool=False
     parameters:tuple=()
     events:tuple=()
+    sound_version:int=1
 
 
 @dataclass(frozen=True)
@@ -102,20 +103,22 @@ def project_degree(degree,root,scale):
 
 def variant(role,song_id,context):
     rng=random.Random(hashlib.sha256((song_id+role+str(context)).encode()).digest())
-    return tuple(max(.02,min(.85,p+rng.uniform(-.055,.055))) for p in DEFAULTS[ROLE_IDS.index(role)])
+    values=[max(0,min(1,p+rng.uniform(-.015,.015))) for p in DEFAULTS[ROLE_IDS.index(role)]]
+    if role=='oxide':values[5]=0
+    return tuple(values)
 
 
 def blank(master=.28,seed=None):
     order=('silt',)+tuple(r for r in ROLE_IDS if r!='silt');sid=uuid.uuid4().hex
-    return Song(2,sid,58,number(master,0,1),62,'dorian',4,order,
-                (Layer(0,'silt',parameters=variant('silt',sid,0)),))
+    return Song(3,sid,58,number(master,0,1),62,'dorian',4,order,
+                (Layer(0,'silt',parameters=variant('silt',sid,0),sound_version=2),))
 
 
 def decode_song(raw):
     raw=dict(raw)
     if raw.get('schema')==1 and 'loop_beats' not in raw:raw['loop_beats']=16
     exact(raw,'schema song_id tempo master root scale loop_beats role_order layers')
-    if type(raw['schema']) is not int or raw['schema'] not in (1,2) or raw['scale'] not in MODES or type(raw['loop_beats']) is not int or raw['loop_beats'] not in range(4,33,4):raise ValueError('unsupported song')
+    if type(raw['schema']) is not int or raw['schema'] not in (1,2,3) or raw['scale'] not in MODES or type(raw['loop_beats']) is not int or raw['loop_beats'] not in range(4,33,4):raise ValueError('unsupported song')
     if raw['schema']==1 and (raw['scale']!='dorian' or raw['loop_beats']!=16):raise ValueError('unsupported V2 song')
     ticks=raw['loop_beats']*TICKS
     if not isinstance(raw['song_id'],str) or not re.fullmatch('[0-9a-f]{32}',raw['song_id']):raise ValueError('invalid song id')
@@ -127,7 +130,8 @@ def decode_song(raw):
     if not isinstance(raw['layers'],list) or not 1<=len(raw['layers'])<=8:raise ValueError('invalid layers')
     layers=[];ids=set()
     for i,item in enumerate(raw['layers']):
-        exact(item,'id role level muted parameters events')
+        exact(item,'id role level muted parameters events'+(' sound_version' if raw['schema']==3 else ''))
+        version=integer(item['sound_version'],1,2) if raw['schema']==3 else 1
         if integer(item['id'],0,7)!=i or item['role']!=order[i] or type(item['muted']) is not bool:raise ValueError('invalid layer identity')
         number(item['level'],0,1)
         params=item['parameters'];events=item['events']
@@ -136,17 +140,17 @@ def decode_song(raw):
         if not isinstance(events,list) or len(events)>MAX_EVENTS:raise ValueError('loop full')
         decoded=[]
         for event in events:
-            exact(event,'id pitch velocity start_tick duration_tick'+(' degree' if raw['schema']==2 else ''))
+            exact(event,'id pitch velocity start_tick duration_tick'+(' degree' if raw['schema']>=2 else ''))
             eid=integer(event['id'],1,ID_MAX)
             if eid in ids:raise ValueError('duplicate event id')
             ids.add(eid);integer(event['pitch'],24,96)
             if number(event['velocity'],0,1)==0:raise ValueError('zero velocity event')
             integer(event['start_tick'],0,ticks-1);integer(event['duration_tick'],1,ticks)
-            degree=integer(event['degree'],-42,42) if raw['schema']==2 else pitch_degree(event['pitch'],raw['root'],raw['scale'])
+            degree=integer(event['degree'],-42,42) if raw['schema']>=2 else pitch_degree(event['pitch'],raw['root'],raw['scale'])
             decoded.append(Event(**dict(event,degree=degree)))
         if decoded!=sorted(decoded,key=lambda e:(e.start_tick,e.id)):raise ValueError('unsorted events')
-        layers.append(Layer(item['id'],item['role'],item['level'],item['muted'],tuple(params),tuple(decoded)))
-    return Song(2,raw['song_id'],raw['tempo'],raw['master'],raw['root'],raw['scale'],raw['loop_beats'],tuple(order),tuple(layers))
+        layers.append(Layer(item['id'],item['role'],item['level'],item['muted'],tuple(params),tuple(decoded),version))
+    return Song(3,raw['song_id'],raw['tempo'],raw['master'],raw['root'],raw['scale'],raw['loop_beats'],tuple(order),tuple(layers))
 
 
 def envelope(revision,state,undo,redo):
@@ -366,7 +370,7 @@ class LoopModel:
         if role not in ROLE_IDS or self.role_state(role)!='READY':self.message='RECORD FOUNDATION / MID TO UNLOCK';return False
         prefix=tuple(l.role for l in self.state.layers)+(role,)
         order=prefix+tuple(r for r in ROLE_IDS if r not in prefix)
-        accepted=self.commit(replace(self.state,role_order=order,layers=self.state.layers+(Layer(i,role,parameters=variant(role,self.state.song_id,i)),)))
+        accepted=self.commit(replace(self.state,role_order=order,layers=self.state.layers+(Layer(i,role,parameters=variant(role,self.state.song_id,i),sound_version=2),)))
         self.selected=i;return accepted
     def rekey(self,root,scale,now=None):
         integer(root,60,71)

@@ -4,7 +4,7 @@
 #define STRING_SIZE 2048
 struct LoopDSP { float string[STRING_SIZE],z[8],modes[6],freq,phase2;unsigned cursor,noise; };
 struct LoopGrain { float position,step;unsigned age,length; };
-struct LoopBus { uint32_t stamps[FX_SIZE],era;float ring[FX_SIZE][2],p[8],low[2],ap[4],phase,phase2,reverse_phase,drop,env;unsigned cursor,grain_clock,noise;int frozen,fade;float last[2];struct LoopGrain grains[6]; };
+struct LoopBus { uint32_t stamps[FX_SIZE],era;float ring[FX_SIZE][2],p[8],low[2],ap[4],phase,phase2,reverse_phase,drop,env;unsigned cursor,grain_clock,noise;int frozen,fade;float last[2],attack,release,cutoff;struct LoopGrain grains[6]; };
 static struct LoopDSP lp_dsp[LP_PLAYBACK+16];
 static struct LoopBus lp_bus[8];
 static _Atomic float lp_fx[8][3];
@@ -21,10 +21,29 @@ static float lp_read(struct LoopBus *b,float delay,int channel){
 static void lp_voice_init(struct LoopVoice *v,int index){
  struct LoopDSP *d=&lp_dsp[index];memset(d,0,sizeof *d);d->freq=(float)(440*pow(2,(v->pitch-69)/12.0));d->noise=(unsigned)(v->id*1234567+76543);
 }
+/* Seconds-based coefficients; backward Euler differs from exact exponential by
+ * <0.15% at the shortest8ms tau, with no transcendental work per sample.
+ * Cached per layer every32samples; z[5]/z[6] are unused by all original voices. */
+static void lp_gentle_coefficients(struct LoopBus *b,int role){
+ float *p=b->p,a=.02f,r=.5f,c=1000;
+ switch(role){
+ case 0:a=.015f+.45f*p[0]*p[0];r=.10f+.65f*p[1]*p[1];c=250+10000*(1-p[2])*(1-p[2]);break;
+ case 1:a=.008f+.06f*(1-p[0])*(1-p[0]);r=.12f+.80f*p[1]*p[1];c=500+4500*(1-p[3])*(1-p[3])*(1-p[3]);break;
+ case 2:a=.020f+.50f*p[2]*p[2];r=.12f+.80f*p[3]*p[3];c=700+6500*p[1]*p[1];break;
+ case 3:a=.040f+.60f*p[4]*p[4];r=.18f+p[5]*p[5];c=600+5000*p[3]*p[3];break;
+ case 4:a=.040f+.60f*p[7]*p[7];r=.55f;c=600+7500*p[0]*p[0];break;
+ case 5:a=.012f+.12f*(1-p[0])*(1-p[0]);r=.12f+.80f*p[1]*p[1];c=400+9000*(1-p[7])*(1-p[7]);break;
+ case 6:a=.050f+.35f*(1-p[0])*(1-p[0]);r=.60f;c=500+6000*p[1]*p[1];break;
+ case 7:a=.008f+.09f*(1-p[0])*(1-p[0]);r=.15f+.60f*(1-p[2])*(1-p[2]);c=600+10000*(1-p[7])*(1-p[7]);break;
+ }
+ b->attack=1/(1+SR*a);b->release=1/(1+SR*r);b->cutoff=c;
+}
 static float lp_voice_sound(struct LoopVoice *v,int index){
  if(!v->active)return 0;
  if(v->retiring){v->gain*=((float)(v->retiring-1)/v->retiring);if(!--v->retiring){v->active=0;return 0;}}
  struct LoopDSP *d=&lp_dsp[index];int role=lp_song.layers[v->layer].role;float *p=lp_bus[v->layer].p;
+ int gentle=lp_song.layers[v->layer].sound_version==2;
+ if(gentle&&(lp_bus[v->layer].cursor%32==0||!lp_bus[v->layer].attack))lp_gentle_coefficients(&lp_bus[v->layer],role);
  v->pressure+=(v->target-v->pressure)*.00028f;
  float attack=.003f,release=.00008f;
  if(role==0){attack=.00008f+.002f*(1-p[0]);release=.000015f+.0003f*(1-p[1]);}
@@ -35,6 +54,7 @@ static float lp_voice_sound(struct LoopVoice *v,int index){
  if(role==5){attack=.001f+.008f*p[0];release=.00002f+.0004f*(1-p[1]);}
  if(role==6){attack=.00008f+.001f*p[0];release=.00008f;}
  if(role==7){attack=.002f+.01f*p[0];release=.00002f+.0003f*p[2];}
+ if(gentle){attack=lp_bus[v->layer].attack;release=lp_bus[v->layer].release;}
  v->gain+=((v->held?1.f:0.f)-v->gain)*(v->held?attack:release);
  if(!v->held&&v->gain<.00001f){v->active=0;return 0;}
  float dt=d->freq/SR,t=(float)(v->phase/TAU),a=(float)sin(v->phase),s=0;
@@ -65,7 +85,7 @@ static float lp_voice_sound(struct LoopVoice *v,int index){
  case 4:{ /* Detuned, band-limited pad; tape treatment belongs to shared bus. */
   d->phase2+=dt*(1+.004f*p[6]);if(d->phase2>=1)d->phase2-=1;
   s=(2*t-1-lp_blep(t,dt)+2*d->phase2-1-lp_blep(d->phase2,dt))*.5f;
-  s+=a*.35f;break;}
+  s+=a*.35f;if(gentle)s=a*(1-p[0]*p[0])+s*p[0]*p[0];break;}
  case 5:{ /* Rounded additive mallet, excitation decays while its gate is held. */
   float age=(float)v->age/SR;float decay=1/(1+age*(1+12*(1-p[1])));
   s=(a+.25f*(float)sin(v->phase*2)+.08f*(float)sin(v->phase*3))*decay;break;}
@@ -79,9 +99,13 @@ static float lp_voice_sound(struct LoopVoice *v,int index){
   for(int h=1;h<=6;h++){float damping=1/(1+age*h*(.1f+4*p[2]));float ratio=h+(h-1)*p[1]*.015f;d->modes[h-1]+=TAU*d->freq*ratio/SR;if(d->modes[h-1]>=TAU)d->modes[h-1]-=TAU;s+=sinf(d->modes[h-1])*damping/(h*h*.6f);}
   break;}
  }
- d->z[7]+=(s-d->z[7])*(.03f+.7f*(1-(role==0?p[2]:role==5?p[7]:role==7?p[7]:.2f)));
+ if(gentle){
+  if(!(v->age%32)){float f=fminf(12000,fmaxf(d->freq*1.25f,lp_bus[v->layer].cutoff));d->z[4]=(TAU*f)/(SR+TAU*f);}
+  d->z[5]+=(s-d->z[5])*d->z[4];d->z[6]+=(d->z[5]-d->z[6])*d->z[4];d->z[7]=d->z[6];
+ }else d->z[7]+=(s-d->z[7])*(.03f+.7f*(1-(role==0?p[2]:role==5?p[7]:role==7?p[7]:.2f)));
  v->phase+=TAU*d->freq/SR;if(v->phase>=TAU)v->phase-=TAU;v->age++;
- return d->z[7]*(role==1?6:1)*v->velocity*v->gain*.09f*(.8f+.2f*v->pressure);
+ static const float trim[8]={1,2,.55f,.85f,.9f,1.8f,1.35f,.75f};
+ return (gentle?trim[role]:1)*d->z[7]*(role==1?6:1)*v->velocity*v->gain*.09f*(.8f+.2f*v->pressure);
 }
 static void lp_effect(int layer,float input,float *left,float *right){
  struct LoopBus *b=&lp_bus[layer];float *p=b->p;int role=lp_song.layers[layer].role;
@@ -100,7 +124,7 @@ static void lp_effect(int layer,float input,float *left,float *right){
  case 4:{ /* Tape moving heads, quantization and ramped, deterministic dropout. */
   delayframes=1200+p[3]*18000+slow*p[1]*220+fast*p[2]*35;feedback=p[4]*.65f;wet=.15f+p[3]*.5f;
   float target=(slow>.96f-p[5]*.3f&&p[5]>.01f)?1-p[5]*.85f:1;b->drop+=(target-b->drop)*.001f;
-  float steps=128+(1-p[0])*12000;l=roundf(input*steps)/steps*b->drop;r=l;aux=1-b->drop;break;}
+  float steps=128+(1-p[0])*12000;if(lp_song.layers[layer].sound_version==2){float quantized=roundf(input*steps)/steps;l=(input+(quantized-input)*p[0]*p[0])*b->drop;}else l=roundf(input*steps)/steps*b->drop;r=l;aux=1-b->drop;break;}
  case 5:{ /* Two overlapping Hann reverse readers, no buffer endpoint jump. */
   float size=3528+p[3]*49392;
   b->reverse_phase+=1/size;if(b->reverse_phase>=1)b->reverse_phase-=1;float phase=b->reverse_phase;
@@ -125,7 +149,15 @@ static void lp_effect(int layer,float input,float *left,float *right){
   l=diffuse+shimmer*p[3]*.4f;r=diffuse+shimmer*p[3]*.4f;delayframes=1400+p[5]*17000;wet=p[5]*.45f;feedback=p[6]*.6f;aux=ph;break;}
  }
  float dl=lp_read(b,delayframes,0),dr=lp_read(b,delayframes+71,1);
- if(!b->frozen){b->stamps[b->cursor]=b->era;b->ring[b->cursor][0]=tanhf(l+dr*feedback);b->ring[b->cursor][1]=tanhf(r+dl*feedback);}
+ if(lp_song.layers[layer].sound_version==2){
+  /* Darken only returned feedback; dry sources and role identities remain. */
+  b->low[0]+=(dl-b->low[0])*.254812f;b->low[1]+=(dr-b->low[1])*.254812f;
+ }
+ if(!b->frozen){
+  b->stamps[b->cursor]=b->era;
+  if(lp_song.layers[layer].sound_version==2){b->ring[b->cursor][0]=tanhf(l+b->low[1]*feedback);b->ring[b->cursor][1]=tanhf(r+b->low[0]*feedback);}
+  else {b->ring[b->cursor][0]=tanhf(l+dr*feedback);b->ring[b->cursor][1]=tanhf(r+dl*feedback);}
+ }
  b->cursor=(b->cursor+1)&(FX_SIZE-1);
  l+=dl*wet;r+=dr*wet;
  b->env+=(fabsf(l)+fabsf(r)-b->env)*.003f;lp_env[layer]=fminf(1,b->env*8);

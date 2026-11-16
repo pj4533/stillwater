@@ -54,7 +54,7 @@ python3 scripts/prepare-home.py .build/payload --engine .build/engine-device.so 
 
 This refuses an existing destination, copies only runtime files and the selected
 engine/tools, and never copies sessions, backups, recordings or machine configuration.
-Inspect its hashes before copying. Source/native must be paired at ABI4, and
+Inspect its hashes before copying. Source/native must be paired at ABI5, and
 runtime art must include all eight `assets/v2/*.bin`, eight `assets/v4/*.poses`
 and eight `assets/v4/*.working`; see `docs/runtime-manifest.json` for45 core runtime
 hashes. The payload helper also includes ownership/recovery scripts and legacy
@@ -166,3 +166,7 @@ current-v3 alongside earlier session versions on code rollback; never overwrite
 newer music merely to restore an
 old build. Restore a private session backup only deliberately, after archiving the
 newer state. Do not factory-reset or update firmware as a troubleshooting shortcut.
+
+New layers use gentle sound version 2; existing music retains version 1.
+Song schema 3 requires paired ABI5 and is rejected by older builds. Preserve
+newer sessions before rollback; see [sound compatibility](GENTLE_SOUND.md).

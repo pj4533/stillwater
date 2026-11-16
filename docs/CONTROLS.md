@@ -94,3 +94,7 @@ untouched. Keep all session versions when backing up or rolling code back.
 Start with speakers/headphones low. Automated PCM/control/render checks do not
 establish physical pad feel, visible hardware hues or musical taste. No user
 session or music is bundled. A fresh clone creates a new one-bar Silt song.
+
+New layers use gentle sound version 2; existing music retains version 1.
+Song schema 3 requires paired ABI5 and is rejected by older builds. Preserve
+newer sessions before rollback; see [sound compatibility](GENTLE_SOUND.md).

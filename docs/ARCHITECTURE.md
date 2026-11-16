@@ -44,7 +44,7 @@ playback voices, eight brief steal tails and256events/layer bound work. Macros
 smooth continuously on held/tail sources and buses; layer gain applies once
 post-bus, followed by smoothed mute/master and output limiting.
 
-`sessions/current-v3.json` uses envelope2/song schema2. When absent, V4 validates
+`sessions/current-v3.json` uses envelope2/song schema3. When absent, V4 validates
 and imports latest current-v2 state, revision and all history, preserving exact
 notes/timing/velocity/roles/parameters/master. Missing V2 length means16beats,
 while fresh V4 defaults to4beats. Unknown newer or invalid history fails startup
@@ -57,7 +57,7 @@ replacement and uses a monotonic accepted-request token plus revision/pending
 checks. Playing/editing cancels replacement. Shutdown silences before bounded
 persistence/media finalization.
 
-Loop bank ABI4 is checked before history/ALSA setup. Length changes use a single
+Loop bank ABI5 is checked before history/ALSA setup. Length changes use a single
 guarded bank/token, validating epoch/activity and no held/unacknowledged takes or
 pending tempo at admission and the old native boundary. Bank/length apply
 atomically; model/history commits after acknowledgment. Ordered cancellation
@@ -65,7 +65,7 @@ precedes musical input; views pass. Length history uses the same transaction.
 Stop settles desired tempo and clears pending tempo. New notes use onset-owned
 recording intent; Record never changes transport or phase.
 
-V4 adds ABI4 all-layer absolute-pitch gate/onset telemetry for role-colored pad
+V4 introduced all-layer absolute-pitch gate/onset telemetry for role-colored pad
 feedback. LibraryManager serializes inventory, rename, confirmed identity-pinned
 load/delete and raw film recovery/cleanup away from input/audio threads. The
 KEY draft commits only on Apply; leaving cancels. Musical recording and film

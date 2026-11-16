@@ -22,7 +22,7 @@ class DSP(unittest.TestCase):
   out=(C.c_float*(n*2))();self.e.lib.sw_render(out,n);return list(out)
  def start(self,role,parameters=None):
   self.e.lib.sw_reset();self.e.generation=0;song=blank(seed=1)
-  layer=Layer(0,ROLE_IDS[role],parameters=tuple(parameters or DEFAULTS[role]))
+  layer=Layer(0,ROLE_IDS[role],parameters=tuple(parameters or DEFAULTS[role]),sound_version=2)
   song=replace(song,role_order=(ROLE_IDS[role],)+tuple(r for r in ROLE_IDS if r!=ROLE_IDS[role]),layers=(layer,))
   self.e.publish(song,1);self.audio(1);self.e.check(self.e.lib.sw_performance_on(0,1,0,62,.8,0,1,1))
  def test_roles_are_audible_distinct_and_finite(self):
@@ -62,7 +62,7 @@ class DSP(unittest.TestCase):
   self.e.transport(2,True,1);self.assertTrue(all(x==0 for x in self.audio(4096)))
  def test_all_roles_maximum_settings_stay_bounded(self):
   self.e.lib.sw_reset();self.e.generation=0;song=blank(seed=1)
-  song=replace(song,role_order=ROLE_IDS,layers=tuple(Layer(i,r,level=1,parameters=(1,)*8) for i,r in enumerate(ROLE_IDS)),master=1)
+  song=replace(song,role_order=ROLE_IDS,layers=tuple(Layer(i,r,level=1,parameters=(1,)*8,sound_version=2) for i,r in enumerate(ROLE_IDS)),master=1)
   self.e.publish(song,1);self.audio(1)
   for i in range(8):self.e.lib.sw_performance_on(i,i+1,i,38+i*4,1,0,1,i+1)
   pcm=self.audio(88200);self.assertTrue(all(math.isfinite(x) and abs(x)<=.25 for x in pcm))

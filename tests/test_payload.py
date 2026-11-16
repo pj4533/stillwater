@@ -42,7 +42,7 @@ class PayloadTests(unittest.TestCase):
         import hashlib
         import json
         manifest=json.loads((ROOT/'docs/runtime-manifest.json').read_text())
-        self.assertEqual(manifest['native_abi'],4)
+        self.assertEqual(manifest['native_abi'],5)
         self.assertEqual(len(manifest['runtime_files']),45)
         with tempfile.TemporaryDirectory() as temp:
             base=Path(temp);engine=base/'engine.so';engine.write_bytes(b'isolated native fixture')

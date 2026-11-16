@@ -50,7 +50,8 @@ language model or network listener is needed during play.
 Eight distinct sources and effect buses, with eight live macros per sound:
 subtractive warmth, plucked filaments, glassy FM, formants, tape, reverse,
 grains and modal shimmer. Build up to eight layers, mix them independently,
-and shape held notes with pressure.
+and shape held notes with pressure. New layers start with gentler, softer defaults;
+existing songs and loop sounds keep their original sound. [Sound compatibility](docs/GENTLE_SOUND.md).
 
 ![Native renderer animation with fixed macros and real DSP telemetry](docs/media/v4-prism.gif)
 
@@ -110,7 +111,7 @@ and plays nothing through speakers. Generated files stay in ignored `.build/`.
 Installation requires **Push 3 Standalone**, existing authorized root SSH access,
 a compatible x86_64 build, pinned host identity and a verified private backup.
 Read the complete [installation, recovery and removal guide](docs/INSTALL.md)
-before touching hardware. It covers dependencies, paired ABI4 source/native/art,
+before touching hardware. It covers dependencies, paired ABI5 source/native/art,
 fresh payload preparation, boot ownership, rollback and deliberate stock return.
 No vendor firmware, SSH enrollment, device backup or encoder binary is included.
 
@@ -143,7 +144,7 @@ or calibrated full MPE. Films need FFmpeg and substantial temporary space
 (about 207 MB/minute raw), stop at 30 minutes and preserve a 512 MiB reserve.
 There is no automatic media pruning.
 
-V4 passed automated local tests and 28 isolated actual-device checks; the normal
+The gentle update passed automated local tests and 29 isolated actual-device checks; the normal
 service remained healthy for 60 seconds afterward. Scripted inputs and PCM
 measurements do not establish physical pad feel, perceived hues, human listening
 approval or universal compatibility. Start with speaker/headphone levels low.

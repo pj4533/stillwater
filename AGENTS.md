@@ -35,7 +35,7 @@ GIF. Text remains last/readable; no flashes, strobes or per-frame fsync. Pillow
 is offline only. Curated assets/*.bin, .poses and .working are packed image data; .build is disposable.
 V4 length changes require guarded native boundary acknowledgment before history
 commit. Preserve whole-window key normalization and onset-owned recording. Ship
-all V2 backgrounds and V4 pose/working assets with matching ABI4 source/native.
+all V2 backgrounds and V4 pose/working assets with matching ABI5 source/native.
 
 ## Hardware/deployment
 
@@ -64,3 +64,7 @@ new third-party DSP. FFmpeg is separately obtained under its own license.
 External agents use the Unix socket in AGENT_API, not an onboard model/voice
 system. Query first, serialize, honor backpressure, keep actions reversible/quiet.
 Commit verified work; publication and deployment are separate explicit actions.
+
+New layers use gentle sound version 2; existing music retains version 1.
+Song schema 3 requires paired ABI5 and is rejected by older builds. Preserve
+newer sessions before rollback; see [sound compatibility](docs/GENTLE_SOUND.md).

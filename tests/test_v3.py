@@ -26,6 +26,7 @@ class ModelV3(unittest.TestCase):
   self.assertEqual(decode_song(json_ready(self.m.state)),self.m.state)
  def legacy(self):
   raw=json_ready(replace(self.m.state,loop_beats=16));raw['schema']=1
+  for layer in raw['layers']:layer.pop('sound_version')
   raw['layers'][0]['events']=[dict(id=10,pitch=61,velocity=.713,start_tick=1535999,duration_tick=1536000)]
   return raw
  def test_v2_migration_preserves_exact_current_history_and_bytes(self):

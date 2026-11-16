@@ -1,8 +1,8 @@
 {
   "format": "stillwater-runtime",
   "version": 4,
-  "native_abi": 4,
-  "native_device_sha256": "56dfb524c0b14d06384293d2bfeacd4ab963f7fedf379c66c42250c38760985a",
+  "native_abi": 5,
+  "native_device_sha256": "2120723de6777115a1a7383abd939490f4f683a85807ff6845f12494fd00e9aa",
   "runtime_files": {
     "assets/v2/backwash.bin": "37da5940a14a4d6d092e2a0b864a2dcb7a52760c478283e5663a43dfa182af1a",
     "assets/v2/choir.bin": "40fe6c2fa1c0b29a4a571830b036b94346e7790a49d69fdcd2f644ac4615ec89",
@@ -37,18 +37,19 @@
     "src/hardware.py": "8b0ac07a3df9201e3a70e1c0f67df066636865822578619e744b32921027cefb",
     "src/library_manager.py": "d3c2cd2d7225477de3a7f4c6045d7f83b870e4e40abe1dbdc6ce22fd35ac2bac",
     "src/loop_app.py": "5ff6625b0b3518ea10f74ed5fda563bfa02050143d642955eda37137cf470b49",
-    "src/loop_dsp.h": "4276a0708bda10d8ddbcfabb1fcc5fad8cdb3ea575e7ace875c6e8e0e9cd5a3e",
-    "src/loop_engine.py": "5d37b08314acb4c3de6220bd0352ca4c36934823e31fbd1c9e0da9ff0073cf35",
+    "src/loop_dsp.h": "2e2d4d08fadb825ad53ff5938295b51be46753353b7191aff63fab594f594e66",
+    "src/loop_engine.py": "25dfa356e445ebc13d30245d86766f3af57f75477bd627475eb1f987bfdcae65",
     "src/loop_export.py": "2e434fcaa5b0138b059ff2d68eb37817990445ba1b66ce3dfb6e47a96c2847ea",
     "src/loop_graphics.py": "5d3089a97c5acc5055126754a59b82d2268ed1507fe3c5039fa24be3237de209",
-    "src/loop_model.py": "c8f1583fc56454cec455fd442042da606d0e793778e328ffb221b1d4440143b0",
-    "src/loop_native.h": "556546767cbf12daeb4aceccea490615fbaea84c9d5d790cc26feda368f6b707",
+    "src/loop_model.py": "891cc0f21152f6da9067bc24996f297fa23b3a6eae63bf3f50083353add500e9",
+    "src/loop_native.h": "7228116b797057042d5e5f8600eeae4a3ca0855450de8c196099923bbfc4cab7",
     "src/management_graphics.py": "0bee7a586d2770a3cfe279465ca34a20873e859cffd5fd647c3e46f0a92cb67e",
     "src/midi.py": "7fc58283a3d8d8cbe5b226d636c7dad70761ed1a67325e4c36c8882020e0e0ae",
     "src/model.py": "ad02299f2593a4232610ab585bec35776de35d9c5e342cf348cd547fc73dc687",
     "src/recorder.py": "aa72a4fa55c1feb75bcdd85c3850037ec5882c0e32eefeff186575c2290aaf05",
-    "src/roles.py": "2092d93a8774ae7ca7bc30f27ef505fde629256d8063f54ab56e24b0913074bf",
+    "src/roles.py": "c617e5656c3c9aaf45cbbe4fc0a73540023adaa03ecb0692ccfaeb72708b866e",
     "src/v4_controls.py": "1c9c96460b29b1a80411cd3e3db02cd31626f1b7d82d2940e0228041b998a30b"
   },
-  "standalone_fresh_build_sha256": "44e8ad0c11e33e40faf9c66e9f0bf43861edec6afc638130a46679f4e2add2ef"
+  "song_schema": 3,
+  "standalone_fresh_build_sha256": "96d9a2c16d8f842f54ffb068979627fba3172284e92c88312b6535e14df7f035"
 }

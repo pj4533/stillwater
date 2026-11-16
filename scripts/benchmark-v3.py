@@ -20,7 +20,7 @@ def metrics(v):return dict(samples=len(v),mean=sum(v)/len(v),p99=sorted(v)[min(l
 def main():
  with tempfile.TemporaryDirectory(dir=ROOT/'.build') as tmp:
   m=LoopModel(Path(tmp)/'current-v3.json',writer=False)
-  layers=tuple(Layer(i,r,1,False,(1,)*8,tuple(Event(i*256+j+1,38+j%24,1,0 if j<8 else (j-7)*6000,1536000) for j in range(256))) for i,r in enumerate(ROLE_IDS))
+  layers=tuple(Layer(i,r,1,False,(1,)*8,tuple(Event(i*256+j+1,38+j%24,1,0 if j<8 else (j-7)*6000,1536000) for j in range(256)),sound_version=2) for i,r in enumerate(ROLE_IDS))
   m.state=replace(m.state,loop_beats=16,tempo=160,master=1,role_order=ROLE_IDS,layers=layers);m.next_id=2049;m.overdub=False
   e=LoopEngine(ROOT/'.build/engine.so');e.lib.sw_reset();e.lib.sw_render.argtypes=[C.POINTER(C.c_float),C.c_int]
   i=LoopInstrument(m,e);out=(C.c_float*512)();e.lib.sw_render(out,1);i.performance.play()

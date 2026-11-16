@@ -1,7 +1,7 @@
 #include "../src/engine.c"
 #include <assert.h>
 int main(void){
- float out[512];sw_reset();struct SongBank b={.loop_beats=16,.tempo=58,.master=.1,.count=1};b.layers[0].level=.3;
+ float out[512];sw_reset();struct SongBank b={.loop_beats=16,.tempo=58,.master=.1,.count=1};b.layers[0].level=.3;b.layers[0].sound_version=1;
  assert(!sw_song_publish(&b,1,1));sw_render(out,1);assert(!sw_loop_transport(1,1,1));
  for(int i=0;i<8;i++)assert(!sw_performance_on(i,i+1,0,62,.5,1,1,i+1));
  sw_render(out,256);

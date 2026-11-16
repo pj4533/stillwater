@@ -9,7 +9,7 @@ The display uses Linux usbfs ioctls directly, **not libusb**. Install ALSA utili
 for `amidi`, plus FFmpeg/ffprobe with H.264/AAC for media workflows. On Debian-like
 systems the relevant packages are `build-essential python3 python3-venv
 python3-pip alsa-utils libasound2 ffmpeg binutils` (ALSA package names vary).
-Pillow is offline tooling only, never needed on Push. Keep at least2GiB free
+NumPy and Pillow are offline tooling only, never needed on Push. Keep at least2GiB free
 on the filesystem containing the checkout/.build: media tests exercise real
 admission thresholds (1GiB at film start), so a512MB temporary filesystem
 cannot run the full suite even when the code/build itself fits.
@@ -32,6 +32,8 @@ only when explicitly invoked.
 ## Offline production workflow and measurements
 
 ```sh
+python3 scripts/preview-gentle.py # synthetic role previews and measured metrics
+python3 scripts/rehearse-gentle.py # fresh gentle growing-loop score
 python3 scripts/rehearse-v4.py # V4 managers, native notes, real film and deletion checks
 python3 scripts/rehearse-v3.py # long-loop regression
 python3 scripts/rehearse-v2.py # legacy16beat regression
@@ -108,3 +110,6 @@ texture; runtime needs no Pillow. Draw text after animated material, retain
 readable negative space, and keep main/mixer/help previews at native 960×160.
 Curated media provenance and regeneration are in [MEDIA](MEDIA.md): V4 device
 display captures and synthetic production-renderer animation, with no camera footage. Do not check generated music, logs or private state in.
+
+See [gentle defaults and compatibility](GENTLE_SOUND.md) for versioned sound,
+legacy PCM proof, schema 3 rollback limits and optional portable portrait tools.

@@ -14,7 +14,7 @@ class NativeEvent(C.Structure):
 
 
 class NativeLayer(C.Structure):
-    _fields_=[('role',C.c_int32),('count',C.c_int32),('level',C.c_float),('muted',C.c_int32),('parameters',C.c_float*8),('events',NativeEvent*256)]
+    _fields_=[('role',C.c_int32),('count',C.c_int32),('level',C.c_float),('muted',C.c_int32),('sound_version',C.c_int32),('parameters',C.c_float*8),('events',NativeEvent*256)]
 
 
 class SongBank(C.Structure):
@@ -37,7 +37,7 @@ def bank_for(song):
     bank=SongBank(tempo=song.tempo,master=song.master,count=len(song.layers),loop_beats=song.loop_beats)
     for i,layer in enumerate(song.layers):
         native=bank.layers[i];native.role=ROLE_IDS.index(layer.role);native.count=len(layer.events)
-        native.level=layer.level;native.muted=layer.muted
+        native.level=layer.level;native.muted=layer.muted;native.sound_version=layer.sound_version
         native.parameters[:]=layer.parameters
         for index,event in enumerate(layer.events):
             native.events[index]=NativeEvent(event.id,event.start_tick,event.duration_tick,event.pitch,event.velocity)
@@ -49,7 +49,7 @@ class LoopEngine(Engine):
         # Check before Engine prepares history or opens ALSA, and before any
         # V3 structure pointer crosses the ABI boundary.
         lib=C.CDLL(str(path))
-        if not hasattr(lib,'sw_loop_abi') or lib.sw_loop_abi()!=4:raise RuntimeError('Stillwater native ABI mismatch / V4 requires paired engine')
+        if not hasattr(lib,'sw_loop_abi') or lib.sw_loop_abi()!=5:raise RuntimeError('Stillwater native ABI mismatch / sound version2 requires paired ABI5 engine')
         super().__init__(path,device)
         self.lib.sw_song_stage.argtypes=[C.POINTER(SongBank)]+[C.c_uint64]*5
         self.lib.sw_song_cancel.argtypes=[C.c_uint64]
