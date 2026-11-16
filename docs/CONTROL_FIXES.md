@@ -105,3 +105,10 @@ roundtrip/native playback; exhaustive geometry tests cover scale and octave
 boundaries. Public host native build passed. Native C is unchanged and the
 verified ABI6 device artifact above is retained.46/46runtime hashes match both
 source checkouts. Actual restoration deployment results follow separately.
+
+The restored release `132b2dfc1d65ab84be386c54280b079f1a81720c` is live
+on Push:92/92hashes,86quiet actual-device checks passed, including simultaneous
+D/F/A and duplicate-pitch LED commands. Normal service resumed with saved music,
+history/media and stopped state unchanged.61samples over61.044seconds had zero
+xruns/peak and stable clean revision. No physical hue/listening acceptance is
+claimed; the Spore oscillation remains unresolved.
