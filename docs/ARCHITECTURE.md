@@ -2,8 +2,8 @@
 
 `src/app.py` launches `loop_app.py` by default. One app owns the ALSA engine,
 MIDI reader, USB display, Unix IPC socket and film/export workers. Legacy classes
-remain for shared infrastructure/regression tests; V2 never silently imports an
-old step song. The supervisor starts one app or audio-free recovery child under
+remain for shared infrastructure/regression tests; V3 imports validated V2
+performed songs and history, preserving legacy step-song files. The supervisor starts one app or audio-free recovery child under
 a singleton lock and PID/start-identity registry. No onboard inference process,
 voice listener or network server exists.
 
@@ -36,20 +36,34 @@ a no-op. Admission precedes model mutation; backpressure never loses note-off.
 The MIDI dispatcher observes fresh Settings receipt while draining ordered bounded
 backlog, preventing a released button becoming a false long hold.
 
-All64pads stay in D Dorian; octave shifts the complete window. Pressure uses the
+All64pads stay in the selected root/mode (seven diatonic modes). Stored canonical
+degrees support reversible rekeying; V2 pitches remain exact until an explicit
+key change. Every state replacement normalizes the complete octave window. Pressure uses the
 manual voice token, not a global layer parameter. Eight manual voices,64global
 playback voices, eight brief steal tails and256events/layer bound work. Macros
 smooth continuously on held/tail sources and buses; layer gain applies once
 post-bus, followed by smoothed mute/master and output limiting.
 
-`sessions/current-v2.json` holds independent schema/history. Only validated legacy
-master is inherited initially; old current/journal bytes remain intact. Undo/redo
+`sessions/current-v3.json` uses envelope2/song schema2. When absent, V3 validates
+and imports latest current-v2 state, revision and all history, preserving exact
+notes/timing/velocity/roles/parameters/master. Missing V2 length means16beats,
+while fresh V3 defaults to4beats. Unknown newer or invalid history fails startup
+without blank overwrite. V2/legacy/library/recording bytes remain untouched.
+Undo/redo
 share64snapshots. A coalescing one-slot autosave worker and bounded jobs keep
 serialization/fsync off input handling; dirty/durable revisions and errors are
 truthful. Snapshots use generated no-overwrite names. Load/New archives before
 replacement and uses a monotonic accepted-request token plus revision/pending
 checks. Playing/editing cancels replacement. Shutdown silences before bounded
 persistence/media finalization.
+
+Loop bank ABI3 is checked before history/ALSA setup. Length changes use a single
+guarded bank/token, validating epoch/activity and no held/unacknowledged takes or
+pending tempo at admission and the old native boundary. Bank/length apply
+atomically; model/history commits after acknowledgment. Ordered cancellation
+precedes musical input; views pass. Length history uses the same transaction.
+Stop settles desired tempo and clears pending tempo. New notes use onset-owned
+recording intent; Record never changes transport or phase.
 
 ## Media/display
 
@@ -58,7 +72,8 @@ telemetry animates registered material; typography draws last over authored quie
 areas. Target10fps; no runtime Pillow, per-frame fsync, global pulses or strobes.
 Film spools actual frames/post-limiter stereo history then encodes on a worker.
 Exact-loop export streams the next complete boundary interval in chunks from the
-45-second history; it creates no second audio engine. Activity/epoch/xrun guards
+45-second history; it creates no second audio engine. Deadline derives from sample
+distance plus bounded I/O margin (up to128seconds wait+capture at32beats/30BPM). Activity/epoch/xrun guards
 cancel changed takes; view-only changes are allowed. Output/sidecar files never
 overwrite previous files. No microphone/input-audio recording exists.
 
@@ -71,7 +86,8 @@ port number. Audio is `hw:A3,0` on the tested device; verify compatibility first
 
 CC map: screen encoders71–78, Volume79, Tempo14; select102–109, mute20–27;
 Play85, Stop Clips29, New92, Note50, Session51, Mix112, Device110, Shift49,
-Save82, Undo119, Record86, Help81, Settings30, arrows62/63. Pads36–99.
+Save82, Undo119, Record86, Scale58, Repeat56, Delete118, Clip113, Help81,
+Settings30, arrows62/63. Pads36–99.
 No calibrated full-MPE pitch/slide is assumed. Never open a competing MIDI reader.
 
 Failure retains boot preference and uses bounded quiet retries. Prior PID/start
@@ -79,3 +95,8 @@ identities must all be dead before a new hardware child is gated open. Blocked
 ownership fails closed and retains evidence. Explicit Settings or stock.sh
 --disable are the deliberate stock escape; crashes never start competing stock
 software. Hardware failure can prevent the recovery display itself.
+
+Source-derived art uses17macro geometries and five independently envelope-gated
+audio poses. Runtime only copies bounded rows; all visited role pose caches total
+44,564,480bytes. Eight organically dimmed working backgrounds keep real Mix/LOOP
+data readable and empty channels clear. See assets/v3/README.md for format.

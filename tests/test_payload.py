@@ -37,3 +37,20 @@ class PayloadTests(unittest.TestCase):
             with patch.object(sys,'argv',['prepare-home',str(target),'--engine',str(engine),'--tools',str(tools)]):
                 with self.assertRaises(SystemExit):prepare.main()
             self.assertFalse(target.exists())
+
+    def test_v3_payload_contains_all_paired_runtime_assets_and_matching_source(self):
+        import hashlib
+        import json
+        manifest=json.loads((ROOT/'docs/runtime-manifest.json').read_text())
+        self.assertEqual(manifest['native_abi'],3)
+        self.assertEqual(len(manifest['runtime_files']),42)
+        with tempfile.TemporaryDirectory() as temp:
+            base=Path(temp);engine=base/'engine.so';engine.write_bytes(b'isolated native fixture')
+            target=base/'payload'
+            with patch.object(sys,'argv',['prepare-home',str(target),'--engine',str(engine)]):prepare.main()
+            for name,digest in manifest['runtime_files'].items():
+                self.assertTrue((target/name).is_file(),name)
+                self.assertEqual(hashlib.sha256((target/name).read_bytes()).hexdigest(),digest,name)
+            for role in ('silt','filament','glass','choir','oxide','backwash','spore','prism'):
+                self.assertEqual((target/'assets/v3'/(role+'.poses')).stat().st_size,5570560)
+                self.assertEqual((target/'assets/v3'/(role+'.working')).stat().st_size,327680)

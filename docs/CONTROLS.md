@@ -1,53 +1,49 @@
-# Playing Stillwater
+# Stillwater V3 — play, audition, grow
 
-Lower the speaker/headphone level before starting. A new song is silent, with one
-blank role drawn from a shuffled eight-role deck. **Play** arms recording; the
-first played note anchors the four-bar/sixteen-beat loop. Keep playing to overdub.
-Play with an existing phrase starts at phase zero; Play again or **Stop Clips**
-fades to silence. Stopped pads audition without recording.
+Press **Play**, then play a pad to anchor a fresh one-bar loop. **Record** lights
+when notes will record; tap it to audition while playback continues, then tap it
+again to overdub. Stopped pads audition. The large header says REC, AUDITION or
+STOPPED REC ARMED. A held note keeps the recording intent it had at onset.
+Existing V2 music keeps its original four-bar loop and exact performed notes.
 
-| Physical control | Action |
-|---|---|
-| All 64 pads | D Dorian notes in every view; pressure follows that held voice |
-| Left / Right | Shift the complete playable octave window, keeping the song key |
-| New | Add the next unused role without stopping; eight layers maximum |
-| Top eight screen buttons | Select existing layers without rerolling sounds |
-| Lower eight screen buttons | Mute/unmute layers, including held/tail output |
-| Note / Device | Selected role scene and eight macros |
-| Eight screen encoders | Selected role macros; in Mix, respective layer levels |
-| Mix (top-right physical mixer button) | Eight-layer mixer; ENV is activity, not level |
-| Separate Volume encoder | MASTER OUTPUT 0–100% in every view |
-| Session | All eight layers across the same four bars and moving loop cursor |
-| Shift + Note | Toggle overdub/audition without restarting transport |
-| Tempo | Apply tempo at the next loop boundary |
-| Undo / Shift + Undo | Undo / redo; first undo cancels an unfinished take |
-| Save | New no-overwrite named snapshot; autosave also runs asynchronously |
-| Shift + Session | Library: encoders scroll, arrows jump eight, top buttons load |
-| Shift + New | Archive current song, then create a blank one-layer song |
-| Record | Finish automatic film while music continues; later toggle manual film |
-| Shift + Record | Export exactly the next complete loop as stereo WAV + sidecar |
-| Shift + Save | Bottle: last available 30 seconds of actual output |
-| Help | Control reference; pads/knobs remain usable |
-| Hold Settings two seconds | Deliberately return to stock for this session |
+- **Repeat** adds one bar at the next loop boundary, repeating the first bar.
+  Maximum8bars. Release pads and let pending takes/tempo finish first. New notes
+  or edits cancel a pending addition; views remain usable. Undo before it applies
+  cancels it; Undo afterward restores the old length at a boundary.
+- **New** opens the sound chooser. Top screen buttons choose an available role.
+  Silt starts every fresh song; recorded foundation unlocks middle sounds, then
+  recorded foundation+middle unlock accents. Used/locked roles explain their
+  state. Selecting an existing layer keeps its sound and notes.
+- **Scale** opens KEY. Screen encoder1 chooses root, encoder2 chooses Major,
+  Dorian, Phrygian, Lydian, Mixolydian, Minor or Locrian. All layers follow the key;
+  Undo restores the preceding key and music. Left/Right shifts the complete pad
+  octave window. All64 pads remain scale notes on every page.
+- **Delete** clears just the selected layer's notes. Its sound, macros, level and
+  mute remain. Undo restores the phrase. Late unfinished takes cannot return.
+- **Note / Device** shows eight source-material mechanisms and macro values;
+  screen encoders change their actual sound. Image geometry follows the values
+  even silently; native envelopes/effects add restrained movement while sounding.
+  **Mix** sets layer levels. **Volume** always controls MASTER OUTPUT0–100%.
+- **Clip / Session** opens LOOP: encoder1 changes BPM; lower26 adds a bar, lower27
+  exports exactly the next full loop to WAV. The separate Tempo encoder also
+  works. Pending tempo and additions clearly show next-loop timing.
+- Top screen buttons select existing layers. Lower buttons mute their matching
+  layer on the main/Mix pages; colors follow each role. Pad roots and held pads
+  glow in its hue, natural pitch classes are dim white and accidentals dark tint.
+- **Undo / Shift+Undo** undo/redo. **Save** writes a new song snapshot; autosave
+  runs asynchronously and SAVED/UNSAVED/SAVE ERROR shows durability. **Shift+Session**
+  opens the library. **Shift+New** archives, then opens a blank one-bar song.
+- First **Play** attempts an automatic screen+stereo film. **Shift+Record** starts
+  or finishes a film without stopping music; FILM status is separate from REC.
+  **Shift+Save** retains Bottle of the last available30seconds of real output.
+- For exact WAV, release pads and settle takes/tempo/additions first. A32beat loop
+  at30BPM is64seconds and may need nearly128seconds to wait+capture. Musical edits,
+  audition, Stop, xruns and structural changes cancel it; view changes are allowed.
+- **Help** lists controls. Hold **Settings** two seconds for deliberate stock return.
 
-The first Play attempts one automatic screen+stereo film per song, after a real
-screen frame and before the first note. REC/SAVING/errors remain visible.
-This captures the rendered screen, not a camera. Finishing can take time while
-music continues. Do not power off during saving. A 30-minute limit and 512MB
-reserve bound admission; completed files are never overwritten.
-
-For exact-loop WAV, release pads and finish pending captures/tempo changes first.
-The next complete loop streams from post-limiter history (32 seconds at 30BPM).
-Musical edits, audition, Stop, tempo change or xruns cancel the export; view
-changes are allowed. The sidecar records sample endpoints and the PCM hash.
-
-SAVED means that revision reached disk. UNSAVED/SAVE ERROR describe undurable
-edits. Loading stops playback and archives the current song first; archive errors
-preserve the current song. Playing/editing while replacement is busy cancels it.
-The latest accepted load/new request wins. Undo/redo share a bounded 64-snapshot
-history; encoder turns of the same parameter within 250ms group as one gesture,
-with intervening notes breaking the group.
-
-V2 uses `sessions/current-v2.json`. Legacy `current.json` and its journal are
-preserved unchanged; only a validated legacy master is inherited on first launch.
-There is no automatic legacy melody import. Back up the entire sessions directory.
+V3 validates and copies the latest V2 song and all undo/redo on first launch,
+using its own `sessions/current-v3.json`. V2/legacy/library/recordings remain
+untouched. Keep all session versions when backing up or rolling code back.
+Start with speakers/headphones low. Automated PCM/control/render checks do not
+establish physical pad feel, visible hardware hues or musical taste. No user
+session or music is bundled. A fresh clone creates a new one-bar Silt song.

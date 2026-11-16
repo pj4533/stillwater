@@ -15,7 +15,7 @@ from roles import ROLE_IDS
 
 def main():
  e=LoopEngine(ROOT/'.build/engine.so');e.lib.sw_reset();e.lib.sw_render.argtypes=[C.POINTER(C.c_float),C.c_int]
- song=blank(seed=1);layers=[]
+ song=replace(blank(seed=1),loop_beats=16);layers=[]
  for i,r in enumerate(ROLE_IDS):
   events=tuple(Event(i*256+j+1,38+(j%24),1,0 if j<8 else (j-7)*6000,LOOP_TICKS) for j in range(256))
   layers.append(Layer(i,r,1,False,(1,)*8,events))

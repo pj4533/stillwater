@@ -18,7 +18,7 @@ class NativeLayer(C.Structure):
 
 
 class SongBank(C.Structure):
-    _fields_=[('tempo',C.c_double),('master',C.c_float),('count',C.c_int32),('layers',NativeLayer*8)]
+    _fields_=[('tempo',C.c_double),('master',C.c_float),('count',C.c_int32),('loop_beats',C.c_int32),('retire_mask',C.c_int32),('layers',NativeLayer*8)]
 
 
 class Take(C.Structure):
@@ -26,11 +26,11 @@ class Take(C.Structure):
 
 
 class Snapshot(C.Structure):
-    _fields_=[(k,C.c_uint64) for k in ('sample','origin','phase','cycle','loop_frames','epoch','generation','activity','boundary')]+[('tempo',C.c_double),('pending_tempo',C.c_double)]+[(k,C.c_int32) for k in ('transport','held','pending','captures','rejected')]
+    _fields_=[(k,C.c_uint64) for k in ('sample','origin','phase','cycle','loop_frames','epoch','generation','activity','boundary')]+[('tempo',C.c_double),('pending_tempo',C.c_double)]+[(k,C.c_int32) for k in ('transport','held','pending','captures','rejected','loop_beats','pending_beats')]+[('op_token',C.c_uint64),('ack_token',C.c_uint64),('op_status',C.c_int32)]
 
 
 def bank_for(song):
-    bank=SongBank(tempo=song.tempo,master=song.master,count=len(song.layers))
+    bank=SongBank(tempo=song.tempo,master=song.master,count=len(song.layers),loop_beats=song.loop_beats)
     for i,layer in enumerate(song.layers):
         native=bank.layers[i];native.role=ROLE_IDS.index(layer.role);native.count=len(layer.events)
         native.level=layer.level;native.muted=layer.muted
@@ -42,7 +42,13 @@ def bank_for(song):
 
 class LoopEngine(Engine):
     def __init__(self,path,device=None):
+        # Check before Engine prepares history or opens ALSA, and before any
+        # V3 structure pointer crosses the ABI boundary.
+        lib=C.CDLL(str(path))
+        if not hasattr(lib,'sw_loop_abi') or lib.sw_loop_abi()!=3:raise RuntimeError('Stillwater native ABI mismatch / V3 requires paired engine')
         super().__init__(path,device)
+        self.lib.sw_song_stage.argtypes=[C.POINTER(SongBank)]+[C.c_uint64]*5
+        self.lib.sw_song_cancel.argtypes=[C.c_uint64]
         self.lib.sw_song_publish.argtypes=[C.POINTER(SongBank),C.c_uint64,C.c_uint64]
         self.lib.sw_loop_transport.argtypes=[C.c_int,C.c_int,C.c_uint64]
         self.lib.sw_performance_on.argtypes=[C.c_int,C.c_int,C.c_int,C.c_int,C.c_float,C.c_int,C.c_uint64,C.c_uint64]
@@ -57,10 +63,15 @@ class LoopEngine(Engine):
         self.generation=0;self.last_snapshot=None
     def check(self,result):
         if result:raise RuntimeError('native loop command rejected (%d)'%result)
-    def publish(self,song,epoch):
-        bank=bank_for(song);generation=self.generation+1
+    def publish(self,song,epoch,retire_mask=0):
+        bank=bank_for(song);bank.retire_mask=retire_mask;generation=self.generation+1
         self.check(self.lib.sw_song_publish(C.byref(bank),generation,epoch));self.generation=generation
         return generation
+    def stage(self,song,epoch,token,guard):
+        bank=bank_for(song);generation=self.generation+1
+        self.check(self.lib.sw_song_stage(C.byref(bank),generation,epoch,token,guard['epoch'],guard['activity']))
+        self.generation=generation
+    def cancel_stage(self,token):self.check(self.lib.sw_song_cancel(token))
     def loop_stats(self):
         snapshot=Snapshot();result=self.lib.sw_loop_snapshot(C.byref(snapshot))
         if result==-1 and self.last_snapshot is not None:return dict(self.last_snapshot)
@@ -87,10 +98,56 @@ class LoopEngine(Engine):
 
 class LoopPerformance:
     def __init__(self,model,engine):
-        self.model=model;self.engine=engine;self.slots=[None]*8;self.token=0;self.transport=0
+        self.model=model;self.engine=engine;self.slots=[None]*8;self.token=0;self.transport=0;self.structural=None;self.op_serial=0
         self.engine.publish(model.state,model.capture_epoch)
     def drain(self):
         for take in self.engine.takes():self.model.accept_take(take)
+        self.resolve()
+    def resolve(self):
+        if not self.structural:return
+        s=self.engine.loop_stats();op=self.structural
+        if s['ack_token']!=op['token']:return
+        if s['op_status']==1:
+            m=self.model
+            if m.revision!=op['revision']:raise RuntimeError('structural revision changed before native acknowledgment')
+            if op['kind']=='undo':
+                m.redo_stack=(m.redo_stack+(m.state,))[-64:];m.state=op['state'];m.undo_stack=m.undo_stack[:-1];m._history_changed()
+            elif op['kind']=='redo':
+                m.undo_stack=(m.undo_stack+(m.state,))[-64:];m.state=op['state'];m.redo_stack=m.redo_stack[:-1];m._history_changed()
+            else:m.commit(op['state']);m.capture_epoch=op['epoch']
+            m.next_id=max(m.next_id,1+max((e.id for l in m.state.layers for e in l.events),default=0))
+            m.message='LOOP '+str(m.state.loop_beats//4)+' BARS'
+        else:self.model.message='ADD BAR / LENGTH CHANGE CANCELLED'
+        self.structural=None
+    def cancel_structural(self):
+        self.drain()
+        if self.structural:
+            if not self.structural['cancelling']:
+                self.engine.cancel_stage(self.structural['token']);self.structural['cancelling']=True
+            return False
+        return True
+    def stage(self,state,kind='extend'):
+        self.drain();m=self.model;s=self.engine.loop_stats()
+        if self.structural or m.pending or s['held'] or s['pending'] or s['pending_tempo']:raise ValueError('RELEASE PADS / WAIT FOR TAKES AND TEMPO')
+        # Build only after the final take drain/admission check; a capture may
+        # have completed between the button's initial drain and this call.
+        state=state() if callable(state) else state
+        self.op_serial+=1;epoch=m.capture_epoch+1
+        self.engine.stage(state,epoch,self.op_serial,s)
+        self.structural=dict(state=state,kind=kind,token=self.op_serial,epoch=epoch,revision=m.revision,cancelling=False)
+        m.message='ADD BAR / REPEAT FIRST BAR / NEXT LOOP' if kind=='extend' else 'LENGTH CHANGE / NEXT LOOP'
+        return True
+    def extend(self):return self.stage(self.model.extended)
+    def clear(self):
+        self.drain();m=self.model;m.clear_layer()
+        self.engine.publish(m.state,m.capture_epoch,1<<m.selected);self.slots=[None]*8
+    def rekey(self,root,scale):
+        self.drain();m=self.model
+        if (root,scale)==(m.state.root,m.state.scale):return False
+        m.pending.clear();m.capture_epoch+=1
+        m.rekey(root,scale)
+        self.engine.publish(m.state,m.capture_epoch,255);self.slots=[None]*8
+        return True
     def stop(self):
         self.drain();self.engine.transport(0,self.model.overdub,self.model.capture_epoch);self.transport=0;self.slots=[None]*8
     def play(self):
@@ -99,19 +156,34 @@ class LoopPerformance:
         self.transport=2 if any(l.events for l in self.model.state.layers) else 1
         self.engine.transport(self.transport,self.model.overdub,self.model.capture_epoch)
     def undo(self,redo=False):
-        self.drain();result=self.model.redo() if redo else self.model.undo()
-        if result:
-            self.engine.publish(self.model.state,self.model.capture_epoch);self.slots=[None]*8
-        return result
-    def add_layer(self):
         self.drain()
-        if self.model.add_layer():
+        if self.structural:self.cancel_structural();return 'cancel'
+        stack=self.model.redo_stack if redo else self.model.undo_stack
+        if stack and stack[-1].loop_beats!=self.model.state.loop_beats:
+            s=self.engine.loop_stats()
+            if self.model.pending or s['held'] or s['pending']:
+                self.model.message='RELEASE PADS / WAIT FOR TAKES';return False
+            def target():
+                latest=self.model.redo_stack if redo else self.model.undo_stack
+                if not latest:raise ValueError('HISTORY CHANGED / RETRY')
+                return latest[-1]
+            return self.stage(target,'redo' if redo else 'undo')
+        before=self.model.state
+        result=self.model.redo() if redo else self.model.undo()
+        if result:
+            key_changed=(before.root,before.scale)!=(self.model.state.root,self.model.state.scale)
+            self.engine.publish(self.model.state,self.model.capture_epoch,255 if key_changed else 0);self.slots=[None]*8
+        return result
+    def add_layer(self,role=None):
+        self.drain()
+        if self.model.add_layer(role):
             self.engine.publish(self.model.state,self.model.capture_epoch);return True
         return False
     def wire(self,event):
         self.drain();m=self.model;kind=event['kind'];channel=event['channel'];number=event['number'];value=event['value']
         if kind=='note' and value==0:kind='note_off'
         if kind=='note' and 36<=number<=99:
+            pitch=pad_pitch(number,m.octave,m.state.root,m.state.scale)
             matching=[i for i,s in enumerate(self.slots) if s and s['held'] and (s['channel'],s['pad'])==(channel,number)]
             empty=[i for i,s in enumerate(self.slots) if s is None]
             released=[i for i,s in enumerate(self.slots) if s and not s['held']]
@@ -121,7 +193,7 @@ class LoopPerformance:
             record=self.transport!=0 and m.overdub
             if record:eid=m.reserve(slot,self.token,m.selected)
             else:eid=m.next_id;m.next_id+=1
-            result=self.engine.lib.sw_performance_on(slot,self.token,m.selected,pad_pitch(number,m.octave),value/127,record,m.capture_epoch,eid)
+            result=self.engine.lib.sw_performance_on(slot,self.token,m.selected,pitch,value/127,record,m.capture_epoch,eid)
             if result!=0:m.pending.pop((slot,self.token),None)
             if result<0:self.engine.check(result)
             self.slots[slot]=dict(channel=channel,pad=number,token=self.token,held=True)

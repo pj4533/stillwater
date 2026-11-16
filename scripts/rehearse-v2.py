@@ -49,6 +49,7 @@ def main():
         raw=json.dumps(dict(format='stillwater-session',version=3,revision=12,state=old,history=[old]*4)).encode();legacy.write_bytes(raw)
         journal=legacy.with_suffix('.history.json');journal.write_bytes(b'UNTOUCHED LEGACY JOURNAL')
         m=LoopModel(home/'sessions/current-v2.json',legacy=legacy,seed=19)
+        m.state=replace(m.state,loop_beats=16)  # Original V2 timing regression.
         e=LoopEngine(ROOT/'.build/engine.so');e.lib.sw_reset();e.lib.sw_render.argtypes=[C.POINTER(C.c_float),C.c_int]
         recorder=SessionRecorder(e,home/'recordings');bottle=Bottle(e,home/'recordings');export=LoopExport(e,home/'recordings')
         inst=LoopInstrument(m,e,bottle,recorder,export);parser=MidiParser()
@@ -73,18 +74,19 @@ def main():
             while sample<68*44100:
                 for layer in range(8):
                     def begin(layer=layer):
-                        if layer:cc(92)
+                        if layer:
+                            cc(92);role=next(r for r in __import__('roles').ROLE_IDS if m.role_state(r)=='READY');cc(102+__import__('roles').ROLE_IDS.index(role))
                         wire([0x92,60+layer,100]);cc(71,3)
                     once('layer'+str(layer),layer,begin,sample)
                     once('release'+str(layer),layer+.3,lambda layer=layer:wire([0x82,60+layer,0]),sample)
                 once('undo',8,lambda:cc(119),sample)
                 once('redo',8.2,lambda:(cc(49),cc(119),cc(49,0)),sample)
                 once('save',9,lambda:cc(82),sample)
-                once('export',12,lambda:(cc(49),cc(86),cc(49,0)),sample)
+                once('export',12,lambda:(cc(113),cc(27),cc(110)),sample)
                 once('mixer',20,lambda:cc(112),sample)
                 once('overview',24,lambda:cc(51),sample)
                 once('main',28,lambda:cc(110),sample)
-                once('film finish',65,lambda:cc(86),sample)
+                once('film finish',65,lambda:(cc(49),cc(86),cc(49,0)),sample)
                 once('stop',65.2,lambda:cc(29),sample)
                 pcm=render_audio(min(4410,68*44100-sample));n=len(pcm)//2
                 if sample<65*44100:
@@ -97,7 +99,7 @@ def main():
                 if 24*44100<=sample<25*44100:image(frame).save(out/'overview.png')
                 if sample<8*44100:frames.append(image(frame))
                 if sample==4410:image(frame).save(out/'recording-overdub.png')
-                if sample==8*44100:cc(92);image(screen()).save(out/'eight-layer-limit.png')
+                if sample==8*44100:cc(92);cc(110);image(screen()).save(out/'eight-layer-limit.png')
                 sample+=n;time.sleep(.003)
         cc(81);image(screen()).save(out/'help.png');cc(81)
         image(screen()).save(out/'eight-layers-stopped.png')
@@ -150,7 +152,7 @@ def main():
         deadline=time.monotonic()+3
         while len(m.state.layers)!=1 and time.monotonic()<deadline:inst.tick();render_audio(256);time.sleep(.005)
         check('shiftnewarchivesblank1layer',len(m.state.layers)==1 and not m.state.layers[0].events)
-        cc(119);render_audio(256);check('undoNew restores8layers',len(m.state.layers)==8)
+        cc(119);render_audio(256);inst.tick();check('undoNew restores8layers',len(m.state.layers)==8)
         m.checkpoint(True);check('async current durable',m.writer.flush(m.revision,3))
         check('saved envelope history validates',read_envelope(m.path)['state']==m.state)
         check('legacy remains exact afterlibrary',legacy.read_bytes()==raw)

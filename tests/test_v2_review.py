@@ -15,6 +15,10 @@ from loop_model import LoopModel,SessionWriter,Event,Layer,blank,atomic_write,de
 from roles import ROLE_IDS
 from midi import MidiParser
 
+_v3_blank=blank
+def blank(*args,**kwargs):return replace(_v3_blank(*args,**kwargs),loop_beats=16)
+
+
 class DelayedWriter:
  """Real library job implementation; completions explicitly delayed by the test."""
  def __init__(self,path):self.path=path;self.results=queue.Queue();self.jobs=[]
@@ -29,6 +33,7 @@ class ReplacementOrder(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
   self.m=LoopModel(Path(self.tmp.name)/'current-v2.json',writer=False,seed=2)
+  self.m.state=replace(self.m.state,loop_beats=16)  # Retained V2 fixture.
   self.w=DelayedWriter(self.m.path);self.m.writer=self.w
   self.a=replace(blank(seed=1),master=.4);self.b=replace(blank(seed=3),master=.8)
   self.names=['song-'+str(i)*32+'.json' for i in (1,2)]
@@ -66,6 +71,7 @@ class NativeReview(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory(dir=ROOT/'.build');self.addCleanup(self.tmp.cleanup)
   self.m=LoopModel(Path(self.tmp.name)/'current-v2.json',writer=False,seed=2)
+  self.m.state=replace(self.m.state,loop_beats=16)  # Retained V2 fixture.
   self.e=LoopEngine(ROOT/'.build/engine.so');self.e.lib.sw_reset();self.e.lib.sw_render.argtypes=[C.POINTER(C.c_float),C.c_int]
   self.i=LoopInstrument(self.m,self.e);self.audio(1)
  def audio(self,n):out=(C.c_float*(n*2))();self.e.lib.sw_render(out,n)

@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import queue
 import random
+import hashlib
 import re
 import threading
 import time
@@ -18,7 +19,16 @@ import uuid
 from roles import ROLE_IDS,DEFAULTS
 
 TICKS=96000
-LOOP_TICKS=16*TICKS
+LOOP_TICKS=16*TICKS  # Legacy V2 constant; active timing always uses song.loop_beats.
+MODES={
+    'major':(0,2,4,5,7,9,11),'dorian':(0,2,3,5,7,9,10),
+    'phrygian':(0,1,3,5,7,8,10),'lydian':(0,2,4,6,7,9,11),
+    'mixolydian':(0,2,4,5,7,9,10),'minor':(0,2,3,5,7,8,10),
+    'locrian':(0,1,3,5,6,8,10)}
+PITCH_NAMES=('C','C#','D','D#','E','F','F#','G','G#','A','A#','B')
+FOUNDATIONS=('silt','oxide','spore')
+MIDS=('choir','filament','glass')
+ACCENTS=('backwash','prism')
 MAX_EVENTS=256
 MAX_HISTORY=64
 MAX_FILE=16*1024*1024
@@ -46,6 +56,9 @@ class Event:
     velocity:float
     start_tick:int
     duration_tick:int
+    degree:int=None
+    def __post_init__(self):
+        if self.degree is None:object.__setattr__(self,'degree',pitch_degree(self.pitch))
 
 
 @dataclass(frozen=True)
@@ -71,19 +84,44 @@ class Song:
     layers:tuple
 
 
+def degree_pitch(degree,root=62,scale='dorian'):
+    return root+12*(degree//7)+MODES[scale][degree%7]
+
+
+def pitch_degree(pitch,root=62,scale='dorian'):
+    # Lower degree wins exact-distance ties, including off-scale V2 imports.
+    return min(range(-42,43),key=lambda d:(abs(degree_pitch(d,root,scale)-pitch),d))
+
+
+def project_degree(degree,root,scale):
+    pitch=degree_pitch(degree,root,scale)
+    while pitch<24:pitch+=12
+    while pitch>96:pitch-=12
+    return pitch
+
+
+def variant(role,song_id,context):
+    rng=random.Random(hashlib.sha256((song_id+role+str(context)).encode()).digest())
+    return tuple(max(.02,min(.85,p+rng.uniform(-.055,.055))) for p in DEFAULTS[ROLE_IDS.index(role)])
+
+
 def blank(master=.28,seed=None):
-    order=list(ROLE_IDS);random.Random(seed).shuffle(order)
-    role=order[0]
-    return Song(1,uuid.uuid4().hex,58,number(master,0,1),62,'dorian',16,tuple(order),
-                (Layer(0,role,parameters=DEFAULTS[ROLE_IDS.index(role)]),))
+    order=('silt',)+tuple(r for r in ROLE_IDS if r!='silt');sid=uuid.uuid4().hex
+    return Song(2,sid,58,number(master,0,1),62,'dorian',4,order,
+                (Layer(0,'silt',parameters=variant('silt',sid,0)),))
 
 
 def decode_song(raw):
+    raw=dict(raw)
+    if raw.get('schema')==1 and 'loop_beats' not in raw:raw['loop_beats']=16
     exact(raw,'schema song_id tempo master root scale loop_beats role_order layers')
-    if type(raw['schema']) is not int or raw['schema']!=1 or raw['scale']!='dorian' or type(raw['loop_beats']) is not int or raw['loop_beats']!=16:raise ValueError('unsupported song')
+    if type(raw['schema']) is not int or raw['schema'] not in (1,2) or raw['scale'] not in MODES or type(raw['loop_beats']) is not int or raw['loop_beats'] not in range(4,33,4):raise ValueError('unsupported song')
+    if raw['schema']==1 and (raw['scale']!='dorian' or raw['loop_beats']!=16):raise ValueError('unsupported V2 song')
+    ticks=raw['loop_beats']*TICKS
     if not isinstance(raw['song_id'],str) or not re.fullmatch('[0-9a-f]{32}',raw['song_id']):raise ValueError('invalid song id')
     number(raw['tempo'],30,160);number(raw['master'],0,1)
-    if raw['root']!=62 or type(raw['root']) is not int:raise ValueError('song key is D Dorian')
+    integer(raw['root'],60,71)
+    if raw['schema']==1 and raw['root']!=62:raise ValueError('invalid V2 key')
     order=raw['role_order']
     if not isinstance(order,list) or len(order)!=8 or set(order)!=set(ROLE_IDS):raise ValueError('invalid role deck')
     if not isinstance(raw['layers'],list) or not 1<=len(raw['layers'])<=8:raise ValueError('invalid layers')
@@ -98,20 +136,21 @@ def decode_song(raw):
         if not isinstance(events,list) or len(events)>MAX_EVENTS:raise ValueError('loop full')
         decoded=[]
         for event in events:
-            exact(event,'id pitch velocity start_tick duration_tick')
+            exact(event,'id pitch velocity start_tick duration_tick'+(' degree' if raw['schema']==2 else ''))
             eid=integer(event['id'],1,ID_MAX)
             if eid in ids:raise ValueError('duplicate event id')
             ids.add(eid);integer(event['pitch'],24,96)
             if number(event['velocity'],0,1)==0:raise ValueError('zero velocity event')
-            integer(event['start_tick'],0,LOOP_TICKS-1);integer(event['duration_tick'],1,LOOP_TICKS)
-            decoded.append(Event(**event))
+            integer(event['start_tick'],0,ticks-1);integer(event['duration_tick'],1,ticks)
+            degree=integer(event['degree'],-42,42) if raw['schema']==2 else pitch_degree(event['pitch'],raw['root'],raw['scale'])
+            decoded.append(Event(**dict(event,degree=degree)))
         if decoded!=sorted(decoded,key=lambda e:(e.start_tick,e.id)):raise ValueError('unsorted events')
         layers.append(Layer(item['id'],item['role'],item['level'],item['muted'],tuple(params),tuple(decoded)))
-    return Song(raw['schema'],raw['song_id'],raw['tempo'],raw['master'],raw['root'],raw['scale'],raw['loop_beats'],tuple(order),tuple(layers))
+    return Song(2,raw['song_id'],raw['tempo'],raw['master'],raw['root'],raw['scale'],raw['loop_beats'],tuple(order),tuple(layers))
 
 
 def envelope(revision,state,undo,redo):
-    return dict(format='stillwater-loop',version=1,revision=revision,state=state,undo=undo,redo=redo)
+    return dict(format='stillwater-loop',version=2,revision=revision,state=state,undo=undo,redo=redo)
 
 
 def json_ready(value):
@@ -128,7 +167,7 @@ def read_envelope(path):
     if len(raw)>MAX_FILE:raise ValueError('session too large')
     obj=json.loads(raw)
     exact(obj,'format version revision state undo redo')
-    if obj['format']!='stillwater-loop' or type(obj['version']) is not int or obj['version']!=1:raise ValueError('unsupported loop envelope')
+    if obj['format']!='stillwater-loop' or type(obj['version']) is not int or obj['version'] not in (1,2):raise ValueError('unsupported loop envelope')
     revision=integer(obj['revision'],0,ID_MAX)
     if not isinstance(obj['undo'],list) or not isinstance(obj['redo'],list) or len(obj['undo'])+len(obj['redo'])>MAX_HISTORY:raise ValueError('invalid history')
     return envelope(revision,decode_song(obj['state']),tuple(decode_song(s) for s in obj['undo']),tuple(decode_song(s) for s in obj['redo']))
@@ -157,13 +196,12 @@ def legacy_master(path):
     return valid['master']
 
 
-def pad_pitch(pad,octave=0):
+def pad_pitch(pad,octave=0,root=62,scale='dorian'):
     integer(pad,36,99);integer(octave,-4,4)
-    x=(pad-36)%8;y=(pad-36)//8;degree=x+y*3
-    pitch=38+(degree//7)*12+(0,2,3,5,7,9,10)[degree%7]+12*octave
-    low=38+12*octave;high=38+4*12+12*octave  # degree28 is the surface maximum.
+    degree=(pad-36)%8+(pad-36)//8*3-14+7*octave
+    low=degree_pitch(-14+7*octave,root,scale);high=degree_pitch(14+7*octave,root,scale)
     if low<24 or high>96:raise ValueError('octave exceeds complete pad window')
-    return pitch
+    return degree_pitch(degree,root,scale)
 
 
 def atomic_write(path,payload,no_replace=False):
@@ -264,10 +302,13 @@ class SessionWriter:
 
 class LoopModel:
     def __init__(self,path,legacy=None,seed=None,writer=True):
-        self.path=Path(path);self.state=blank(legacy_master(legacy) if legacy and not self.path.exists() else .28,seed)
+        self.path=Path(path);v2=self.path.with_name('current-v2.json')
+        bootstrap=read_envelope(v2) if self.path.name=='current-v3.json' and not self.path.exists() and v2.exists() else None
+        self.state=blank(legacy_master(legacy) if legacy and not self.path.exists() and bootstrap is None else .28,seed)
         self.revision=0;self.undo_stack=();self.redo_stack=()
-        if self.path.exists():
-            env=read_envelope(self.path);self.state=env['state'];self.revision=env['revision'];self.undo_stack=env['undo'];self.redo_stack=env['redo']
+        if self.path.exists() or bootstrap is not None:
+            env=read_envelope(self.path) if self.path.exists() else bootstrap
+            self.state=env['state'];self.revision=env['revision'];self.undo_stack=env['undo'];self.redo_stack=env['redo']
         self.selected=0;self.octave=0;self.capture_epoch=1;self.pending={};self.overdub=True
         self.next_id=1+max((e.id for s in (self.state,)+self.undo_stack+self.redo_stack for l in s.layers for e in l.events),default=0)
         self.gesture=None;self.message='PLAY THEN PLAY A NOTE';self.new_revision=None;self.loading_revision=None
@@ -281,12 +322,19 @@ class LoopModel:
         if self.writer:self.writer.submit(self.payload(),force)
     @property
     def dirty(self):return self.writer is not None and self.writer.durable_revision<self.revision
+    def normalize_octave(self):
+        valid=[]
+        for octave in range(-4,5):
+            try:pad_pitch(36,octave,self.state.root,self.state.scale)
+            except ValueError:continue
+            valid.append(octave)
+        self.octave=min(valid,key=lambda octave:(abs(octave-self.octave),octave))
     def commit(self,state,gesture=None,now=None):
         if state==self.state:return False
         now=time.monotonic() if now is None else now
         grouped=gesture is not None and self.gesture is not None and self.gesture[0]==gesture and now-self.gesture[1]<=.25
         if not grouped:self.undo_stack=(self.undo_stack+(self.state,))[-MAX_HISTORY:]
-        self.redo_stack=();self.state=state;self.revision+=1
+        self.redo_stack=();self.state=state;self.normalize_octave();self.revision+=1
         self.gesture=(gesture,now) if gesture is not None else None;self.checkpoint();return True
     def layer_edit(self,index,**changes):
         integer(index,0,len(self.state.layers)-1)
@@ -301,12 +349,41 @@ class LoopModel:
     def set_master(self,value,now=None):return self.commit(replace(self.state,master=number(value,0,1)),('master',),now)
     def set_tempo(self,value,now=None):return self.commit(replace(self.state,tempo=number(value,30,160)),('tempo',),now)
     def mute(self,index):return self.commit(self.layer_edit(index,muted=not self.state.layers[index].muted))
-    def add_layer(self):
+    def role_state(self,role):
+        if any(l.role==role for l in self.state.layers):return 'USED'
+        recorded={l.role for l in self.state.layers if l.events}
+        if role in FOUNDATIONS:return 'READY'
+        if not recorded.intersection(FOUNDATIONS):return 'RECORD FOUNDATION'
+        if role in MIDS:return 'READY'
+        return 'READY' if recorded.intersection(MIDS) else 'RECORD MID LAYER'
+    def add_layer(self,role=None):
         i=len(self.state.layers)
         if i==8:self.message='ALL 8 LAYERS / SELECT A LAYER';return False
-        role=self.state.role_order[i]
-        accepted=self.commit(replace(self.state,layers=self.state.layers+(Layer(i,role,parameters=DEFAULTS[ROLE_IDS.index(role)]),)))
+        if role is None:role=next((r for r in ROLE_IDS if self.role_state(r)=='READY'),None)
+        if role not in ROLE_IDS or self.role_state(role)!='READY':self.message='RECORD FOUNDATION / MID TO UNLOCK';return False
+        prefix=tuple(l.role for l in self.state.layers)+(role,)
+        order=prefix+tuple(r for r in ROLE_IDS if r not in prefix)
+        accepted=self.commit(replace(self.state,role_order=order,layers=self.state.layers+(Layer(i,role,parameters=variant(role,self.state.song_id,i)),)))
         self.selected=i;return accepted
+    def rekey(self,root,scale,now=None):
+        integer(root,60,71)
+        if scale not in MODES:raise ValueError('invalid scale')
+        layers=tuple(replace(l,events=tuple(replace(e,degree=e.degree if e.degree is not None else pitch_degree(e.pitch,self.state.root,self.state.scale),pitch=project_degree(e.degree if e.degree is not None else pitch_degree(e.pitch,self.state.root,self.state.scale),root,scale)) for e in l.events)) for l in self.state.layers)
+        return self.commit(replace(self.state,root=root,scale=scale,layers=layers),('key',),now)
+    def extended(self):
+        s=self.state
+        if s.loop_beats>=32:raise ValueError('8 BAR LIMIT')
+        copies=[[e for e in l.events if e.start_tick<4*TICKS] for l in s.layers]
+        if any(len(l.events)+len(es)>MAX_EVENTS for l,es in zip(s.layers,copies)):raise ValueError('LOOP FULL / ADD BAR CANCELLED')
+        eid=self.next_id;layers=[]
+        for l,es in zip(s.layers,copies):
+            added=[]
+            for e in es:integer(eid,1,ID_MAX);added.append(replace(e,id=eid,start_tick=e.start_tick+s.loop_beats*TICKS));eid+=1
+            layers.append(replace(l,events=l.events+tuple(added)))
+        return replace(s,loop_beats=s.loop_beats+4,layers=tuple(layers))
+    def clear_layer(self):
+        self.pending.clear();self.capture_epoch+=1;self.gesture=None
+        return self.commit(self.layer_edit(self.selected,events=()))
     def reserve(self,slot,token,layer):
         integer(slot,0,7);integer(token,1,2**31-1);integer(layer,0,len(self.state.layers)-1)
         eid=self.next_id;integer(eid,1,ID_MAX);self.next_id+=1
@@ -319,9 +396,9 @@ class LoopModel:
             index=integer(take['layer'],0,len(self.state.layers)-1)
             pitch=integer(take['pitch'],24,96);velocity=number(take['velocity'],0,1)
             if not velocity:raise ValueError('zero velocity event')
-            start=integer(take['start_tick'],0,LOOP_TICKS-1)
-            duration=integer(take['duration_tick'],1,LOOP_TICKS)
-            event=Event(eid,pitch,velocity,start,duration);layer=self.state.layers[index]
+            start=integer(take['start_tick'],0,self.state.loop_beats*TICKS-1)
+            duration=integer(take['duration_tick'],1,self.state.loop_beats*TICKS)
+            event=Event(eid,pitch,velocity,start,duration,pitch_degree(pitch,self.state.root,self.state.scale));layer=self.state.layers[index]
             duplicate=any(e.id==eid for l in self.state.layers for e in l.events)
             if not duplicate and len(layer.events)>=MAX_EVENTS:raise ValueError('native event capacity mismatch')
         for key,value in tuple(self.pending.items()):
@@ -346,6 +423,7 @@ class LoopModel:
         self.undo_stack=(self.undo_stack+(self.state,))[-MAX_HISTORY:]
         self.state=self.redo_stack[-1];self.redo_stack=self.redo_stack[:-1];self._history_changed();return True
     def _history_changed(self):
+        self.normalize_octave()
         self.capture_epoch+=1;self.gesture=None;self.revision+=1;self.selected=min(self.selected,len(self.state.layers)-1);self.checkpoint()
     def request_save(self):
         if not self.writer:raise RuntimeError('persistence unavailable')
@@ -386,11 +464,11 @@ class LoopModel:
                     result['applied']=False;self.message='SONG CHANGED / '+('LOAD' if kind=='load' else 'NEW')+' CANCELLED';continue
                 if kind=='load':
                     self.state=result['payload']['state'];self.undo_stack=self.redo_stack=()
-                    self.selected=0;self._history_changed()
+                    self.selected=0;self.overdub=True;self._history_changed()
                     self.next_id=max(self.next_id,1+max((e.id for l in self.state.layers for e in l.events),default=0))
                     self.message='SONG LOADED / STOPPED'
                 else:
-                    self.commit(blank(self.state.master));self.selected=0;self.capture_epoch+=1
+                    self.commit(blank(self.state.master));self.selected=0;self.overdub=True;self.capture_epoch+=1
                 result['applied']=True
             elif result.get('error'):self.message=result['error']
             elif kind=='snapshot':self.message='SONG SNAPSHOT SAVED'

@@ -1,9 +1,9 @@
 # Stillwater
 
 An independent ambient instrument for **Ableton Push 3 Standalone**. Play the
-first note to anchor a four-bar loop, then build up to eight different native
-sound layers. The display is an animated, original organic machine; every pad
-remains a playable D Dorian note in every view.
+first note to anchor a one-bar loop. Repeat grows it up to eight bars; build up
+to eight different native sound layers. The display is an animated, original organic machine; every pad
+remains a scale note in every view. Choose the root and seven modes on KEY.
 
 ![Eight sound worlds, rendered locally](docs/media/role-contact.png)
 
@@ -15,8 +15,11 @@ No Ableton software, firmware, device backup, user song or recording is included
 
 - Eight distinct sources/effect buses: **Silt, Filament, Glass, Choir, Oxide,
   Backwash, Spore, Prism**; eight live macros per sound, separate mixer and master.
-- Blank first layer, performed velocity/duration capture, ongoing overdub,
-  epoch-safe undo/redo, asynchronous autosave and no-overwrite song library.
+- Deterministic Silt first layer, performed velocity/duration capture, Record
+  toggles overdub/audition without restarting; Shift+Record controls films.
+- Progressive unique role chooser, root/mode changes across all layers, Clear,
+  boundary-safe Add Bar and length Undo/Redo,
+  asynchronous autosave and no-overwrite song library.
 - Actual screen+stereo performance film, exact next-loop WAV export and a
   retrospective 30-second Bottle capture.
 - Local Unix-socket control for external tools/agents; no onboard language
@@ -40,7 +43,7 @@ Install FFmpeg/ffprobe and `python3 -m pip install -r requirements-dev.txt` for
 media tests, artwork conversion and the full offline workflow:
 
 ```sh
-python3 scripts/rehearse-v2.py
+python3 scripts/rehearse-v3.py
 ```
 
 This creates synthetic songs and renders production DSP/graphics to `.build/`;
@@ -55,7 +58,9 @@ beta retained on the tested installation. This does not establish compatibility
 with every current or future firmware, Push 2, controller-only Push 3, desktop
 Live or other audio devices. No firmware downgrade/update is part of this project.
 
-One shared four-bar loop (16 beats), eight layers, 256 recorded events per layer,
+One shared loop: new songs start at4beats/one bar; Repeat adds one bar at a native
+boundary up to32beats/eight bars. Imported V2 songs preserve16beats/four bars and
+exact notes, full Undo/Redo and sound parameters. Eight layers,256events per layer,
 64 global playback voices plus eight manual voices and eight brief steal tails.
 Held capture ends after at most one loop. No input recording, arrangement timeline,
 plugin host, imported step-song conversion or calibrated full MPE. Library names

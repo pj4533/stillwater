@@ -32,17 +32,20 @@ only when explicitly invoked.
 ## Offline production workflow and measurements
 
 ```sh
-python3 scripts/rehearse-v2.py
+python3 scripts/rehearse-v3.py
+python3 scripts/rehearse-v2.py # legacy16beat regression
+python3 scripts/benchmark-v3.py
 python3 scripts/benchmark-v2.py
 python3 scripts/benchmark-v2-drain.py
 python3 scripts/measure-v2-macros.py
 ```
 
-The rehearsal builds all eight roles from notes, checks undo/redo and library
-operations, captures actual production-rendered images, produces a 65-second
+The V3 rehearsal builds all eight roles from notes, checks undo/redo and library
+operations, captures actual production-rendered images, produces a140second
 film, decodes AAC with measured alignment checks, and exports a sample-exact
-32-second loop. It can take several minutes and requires free disk space.
-Results live under `.build/v2-rehearsal/`. Benchmarks use the local CPU, not Push
+64second32beat/30BPM loop across the45second history wrap. Results live under
+`.build/v3-rehearsal/`. The V2 regression retains16beats and32second export.
+Benchmarks use the local CPU, not Push
 unless explicitly run offline on Push. Do not describe container timing as device
 timing. Do not infer listening quality from PCM comparisons.
 
@@ -87,10 +90,17 @@ The `.bin` files are BGR565 image data, not executable binaries. To regenerate:
 
 ```sh
 python3 scripts/prepare-v2-art.py
+python3 scripts/prepare-v3-art.py
+python3 scripts/preview-v3.py # .build/v3-preview; fixed macros and native audio
 # Optional legacy renderer assets:
 python3 scripts/prepare-art.py
 python3 scripts/prepare-organism.py
 ```
+
+The V3 converter derives material deformations from exact prepared V2 pixels,
+including independent audio poses and quiet working backgrounds. Its32low/high
+frames, fixed50%-macro native-audition clips and knob sweeps use the production
+renderer at960x160. Silent geometry persists.
 
 The V2 converter downsamples then nearest-neighbor scales for intentional pixel
 texture; runtime needs no Pillow. Draw text after animated material, retain

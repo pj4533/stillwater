@@ -21,12 +21,19 @@ from model import seeded
 from roles import ROLE_IDS
 
 
+_v3_blank=blank
+def blank(*args,**kwargs):return replace(_v3_blank(*args,**kwargs),loop_beats=16)
+
+
 class ModelV2(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.path=Path(self.tmp.name)/'current-v2.json'
   self.m=LoopModel(self.path,writer=False,seed=31)
+  self.m.state=replace(self.m.state,loop_beats=16)  # Retained V2 fixture.
  def test_blank_deck_and_unique_roles_undo_redo_exact(self):
   self.assertEqual(len(self.m.state.layers),1);self.assertFalse(self.m.state.layers[0].events)
+  # This regression isolates identity/history; V3 progression is tested separately.
+  self.m.role_state=lambda role:'USED' if any(l.role==role for l in self.m.state.layers) else 'READY'
   states=[self.m.state]
   for _ in range(7):self.assertTrue(self.m.add_layer());states.append(self.m.state)
   self.assertEqual(set(l.role for l in self.m.state.layers),set(ROLE_IDS));self.assertFalse(self.m.add_layer())
@@ -154,6 +161,7 @@ class NativeV2(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
   self.m=LoopModel(Path(self.tmp.name)/'current-v2.json',writer=False,seed=2)
+  self.m.state=replace(self.m.state,loop_beats=16)  # Retained V2 fixture.
   self.e=LoopEngine(ROOT/'.build/engine.so');self.e.lib.sw_reset();self.e.lib.sw_render.argtypes=[C.POINTER(C.c_float),C.c_int]
   self.p=LoopPerformance(self.m,self.e);self.audio(1)
  def audio(self,n,chunk=256):

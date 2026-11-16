@@ -23,7 +23,7 @@ class LoopExport:
     def request(self,revision,pending=False):
         if self.closed or (self.worker and self.worker.is_alive()):raise ValueError('Loop export busy')
         s=self.engine.loop_stats()
-        if pending or s['held'] or s['pending'] or s['transport']!=2 or s['pending_tempo']:raise ValueError('Release pads / finish takes / start loop before export')
+        if pending or s['held'] or s['pending'] or s['transport']!=2 or s['pending_tempo'] or s.get('op_token',0):raise ValueError('Release pads / finish takes / start loop before export')
         epoch=self.engine.lib.sw_history_epoch();xruns=self.engine.stats()['xruns']
         start=s['boundary']+s['loop_frames'];end=start+s['loop_frames']
         self.cancel=threading.Event();self.status=dict(state='armed',busy=True,error=None,filename=None,start=start,end=end,revision=revision)
@@ -36,7 +36,7 @@ class LoopExport:
             if shutil.disk_usage(self.directory).free<(end-start)*4+512*1024*1024:raise OSError('Loop export needs free disk reserve')
             name='loop-'+time.strftime('%Y%m%d-%H%M%S',time.gmtime())+'-'+secrets.token_hex(6)
             temp=self.directory/('.'+name+'.wav.part');side=self.directory/('.'+name+'.json.part');final=self.directory/(name+'.wav')
-            cursor=start;digest=hashlib.sha256();deadline=time.monotonic()+70
+            cursor=start;digest=hashlib.sha256();deadline=time.monotonic()+max(0,end-baseline['sample'])/SR+15
             with temp.open('xb') as stream:
                 with wave.open(stream,'wb') as wav:
                     wav.setnchannels(2);wav.setsampwidth(2);wav.setframerate(SR)
@@ -56,7 +56,7 @@ class LoopExport:
                     s=self.engine.loop_stats()
                     if s['activity']!=baseline['activity'] or self.engine.stats()['xruns']!=xruns:raise ValueError('Music changed / export cancelled / try again')
                 stream.flush();os.fsync(stream.fileno())
-            metadata=dict(version=1,kind='stillwater-exact-loop',sample_rate=SR,channels=2,start=start,end=end,frames=end-start,pcm_sha256=digest.hexdigest(),history_epoch=epoch,native_epoch=baseline['epoch'],generation=baseline['generation'],activity=baseline['activity'],revision=revision,tempo=baseline['tempo'],xruns=xruns)
+            metadata=dict(version=1,kind='stillwater-exact-loop',sample_rate=SR,channels=2,start=start,end=end,frames=end-start,pcm_sha256=digest.hexdigest(),history_epoch=epoch,native_epoch=baseline['epoch'],generation=baseline['generation'],activity=baseline['activity'],revision=revision,tempo=baseline['tempo'],loop_beats=baseline.get('loop_beats',16),xruns=xruns)
             with side.open('x') as stream:json.dump(metadata,stream,allow_nan=False);stream.flush();os.fsync(stream.fileno())
             publish(side,self.directory/(name+'.json'));publish(temp,final);published=True
             fd=os.open(self.directory,os.O_RDONLY)

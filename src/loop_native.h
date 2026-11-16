@@ -1,18 +1,20 @@
 /* Original Stillwater V2 event-loop foundation. Included by engine.c so the
  * existing ALSA/history/limiter remain the single output owner. No RT allocation. */
-#define LP_TICKS UINT64_C(1536000)
+#define LP_TICKS ((uint64_t)(lp_song.loop_beats?lp_song.loop_beats:4)*96000)
+#define LP_ABI 3
+int sw_loop_abi(void){return LP_ABI;}
 #define LP_EVENTS 256
 #define LP_PLAYBACK 64
 #define LP_ACKS 64
 #define LP_BANKS 3
 struct LoopEvent { uint64_t id; uint32_t start_tick,duration_tick; int32_t pitch; float velocity; };
 struct LoopLayer { int32_t role,count; float level; int32_t muted; float parameters[8]; struct LoopEvent events[LP_EVENTS]; };
-struct SongBank { double tempo; float master; int32_t count; struct LoopLayer layers[8]; };
+struct SongBank { double tempo; float master; int32_t count,loop_beats,retire_mask; struct LoopLayer layers[8]; };
 struct LoopTake { uint64_t id,epoch; uint32_t start_tick,duration_tick; int32_t layer,pitch,reason,status; float velocity; };
-struct LoopSnapshot { uint64_t sample,origin,phase,cycle,loop_frames,epoch,generation,activity,boundary; double tempo,pending_tempo; int32_t transport,held,pending,captures,rejected; };
-struct LoopCommand { int op,a,b,c,record; uint64_t id,epoch,generation; float value; };
+struct LoopSnapshot { uint64_t sample,origin,phase,cycle,loop_frames,epoch,generation,activity,boundary; double tempo,pending_tempo; int32_t transport,held,pending,captures,rejected,loop_beats,pending_beats; uint64_t op_token,ack_token; int32_t op_status; };
+struct LoopCommand { int op,a,b,c,record; uint64_t id,epoch,generation,guard_epoch,guard_activity; float value; };
 struct LoopHold { int token,layer,pitch,capture; uint64_t id,epoch,start; uint32_t start_tick; float velocity; };
-struct LoopVoice { int active,layer,pitch,held,token; uint64_t id,deadline,age; double phase; float velocity,gain,pressure,target; };
+struct LoopVoice { int active,layer,pitch,held,token,retiring; uint64_t id,deadline,age; double phase; float velocity,gain,pressure,target; };
 static struct SongBank lp_song,lp_banks[LP_BANKS];
 static _Atomic int lp_bank_state[LP_BANKS]; /* FREE0 WRITING1 READY2 */
 static struct LoopCommand lp_commands[QSIZE];static _Atomic unsigned lp_head,lp_tail;
@@ -24,8 +26,10 @@ static uint32_t lp_cursor[8];static uint64_t lp_clock,lp_origin,lp_phase,lp_cycl
 static int lp_enabled,lp_transport,lp_rejected;static double lp_tempo=58,lp_pending_tempo;
 static _Atomic unsigned lp_snapshot_version;
 static _Atomic uint64_t lp_snapshot_values[9];static _Atomic double lp_snapshot_tempo,lp_snapshot_pending;
-static _Atomic int lp_snapshot_ints[5];
-static uint64_t lp_frames_for(double bpm){return (uint64_t)llround(44100.0*60*16/bpm);}
+static _Atomic int lp_snapshot_ints[8];
+static _Atomic uint64_t lp_snapshot_tokens[2];
+static struct LoopCommand lp_pending_op;static uint64_t lp_ack_token;static int lp_op_status;
+static uint64_t lp_frames_for(double bpm){return (uint64_t)llround(44100.0*60*(lp_song.loop_beats?lp_song.loop_beats:4)/bpm);}
 static uint32_t lp_to_tick(uint64_t frame){uint64_t tick=(frame*LP_TICKS+lp_length/2)/lp_length;return (uint32_t)(tick<LP_TICKS?tick:LP_TICKS-1);}
 static uint64_t lp_to_frame(uint32_t tick){return ((uint64_t)tick*lp_length+LP_TICKS/2)/LP_TICKS;}
 static int lp_enqueue(struct LoopCommand c){
@@ -39,10 +43,11 @@ static void lp_snapshot(void){
  int held=0,pending=0,count=0;
  for(int i=0;i<8;i++){held+=lp_holds[i].token!=0;pending+=lp_holds[i].capture;count+=lp_song.layers[i].count;}
  uint64_t vals[]={lp_clock,lp_origin,lp_phase,lp_cycle,lp_length,lp_epoch,lp_generation,lp_activity,lp_boundary};
- int ints[]={lp_transport,held,pending,count,lp_rejected};
+ int ints[]={lp_transport,held,pending,count,lp_rejected,lp_song.loop_beats?lp_song.loop_beats:4,lp_pending_op.op?lp_banks[lp_pending_op.a].loop_beats:0,lp_op_status};
  atomic_fetch_add(&lp_snapshot_version,1);
  for(int i=0;i<9;i++)atomic_store(&lp_snapshot_values[i],vals[i]);
- for(int i=0;i<5;i++)atomic_store(&lp_snapshot_ints[i],ints[i]);
+ for(int i=0;i<8;i++)atomic_store(&lp_snapshot_ints[i],ints[i]);
+ atomic_store(&lp_snapshot_tokens[0],lp_pending_op.id);atomic_store(&lp_snapshot_tokens[1],lp_ack_token);
  atomic_store(&lp_snapshot_tempo,lp_tempo);atomic_store(&lp_snapshot_pending,lp_pending_tempo);
  atomic_fetch_add(&lp_snapshot_version,1);
 }
@@ -50,10 +55,10 @@ int sw_loop_snapshot(struct LoopSnapshot *out){
  if(!out)return -2;
  for(int attempt=0;attempt<3;attempt++){
   unsigned v=atomic_load(&lp_snapshot_version);if(v&1)continue;
-  uint64_t values[9];int ints[5];
+  uint64_t values[9];int ints[8];
   for(int i=0;i<9;i++)values[i]=atomic_load(&lp_snapshot_values[i]);
-  for(int i=0;i<5;i++)ints[i]=atomic_load(&lp_snapshot_ints[i]);
-  struct LoopSnapshot s={.sample=values[0],.origin=values[1],.phase=values[2],.cycle=values[3],.loop_frames=values[4],.epoch=values[5],.generation=values[6],.activity=values[7],.boundary=values[8],.tempo=atomic_load(&lp_snapshot_tempo),.pending_tempo=atomic_load(&lp_snapshot_pending),.transport=ints[0],.held=ints[1],.pending=ints[2],.captures=ints[3],.rejected=ints[4]};
+  for(int i=0;i<8;i++)ints[i]=atomic_load(&lp_snapshot_ints[i]);
+  struct LoopSnapshot s={.sample=values[0],.origin=values[1],.phase=values[2],.cycle=values[3],.loop_frames=values[4],.epoch=values[5],.generation=values[6],.activity=values[7],.boundary=values[8],.tempo=atomic_load(&lp_snapshot_tempo),.pending_tempo=atomic_load(&lp_snapshot_pending),.transport=ints[0],.held=ints[1],.pending=ints[2],.captures=ints[3],.rejected=ints[4],.loop_beats=ints[5],.pending_beats=ints[6],.op_status=ints[7],.op_token=atomic_load(&lp_snapshot_tokens[0]),.ack_token=atomic_load(&lp_snapshot_tokens[1])};
   if(v==atomic_load(&lp_snapshot_version)){*out=s;return 0;}
  }return -1;
 }
@@ -94,7 +99,7 @@ int sw_take_poll(struct LoopTake *out,int capacity){
  atomic_store_explicit(&lp_take_tail,t,memory_order_release);atomic_fetch_sub(&lp_credits,(unsigned)count);return count;
 }
 static int lp_valid_bank(const struct SongBank *bank){
- if(!bank||!isfinite(bank->tempo)||bank->tempo<30||bank->tempo>160||!isfinite(bank->master)||bank->master<0||bank->master>1||bank->count<1||bank->count>8)return 0;
+ if(!bank||!isfinite(bank->tempo)||bank->tempo<30||bank->tempo>160||!isfinite(bank->master)||bank->master<0||bank->master>1||bank->count<1||bank->count>8||bank->loop_beats<4||bank->loop_beats>32||bank->loop_beats%4||bank->retire_mask<0||bank->retire_mask>255)return 0;
  unsigned roles=0;
  for(int l=0;l<bank->count;l++){
   const struct LoopLayer *layer=&bank->layers[l];
@@ -103,7 +108,7 @@ static int lp_valid_bank(const struct SongBank *bank){
   for(int p=0;p<8;p++)if(!isfinite(layer->parameters[p])||layer->parameters[p]<0||layer->parameters[p]>1)return 0;
   for(int e=0;e<layer->count;e++){
    const struct LoopEvent *event=&layer->events[e];
-   if(!event->id||event->id>UINT64_C(9007199254740991)||event->start_tick>=LP_TICKS||!event->duration_tick||event->duration_tick>LP_TICKS||event->pitch<24||event->pitch>96||!isfinite(event->velocity)||event->velocity<=0||event->velocity>1)return 0;
+   if(!event->id||event->id>UINT64_C(9007199254740991)||event->start_tick>=(uint64_t)bank->loop_beats*96000||!event->duration_tick||event->duration_tick>(uint64_t)bank->loop_beats*96000||event->pitch<24||event->pitch>96||!isfinite(event->velocity)||event->velocity<=0||event->velocity>1)return 0;
    if(e&&(layer->events[e-1].start_tick>event->start_tick||(layer->events[e-1].start_tick==event->start_tick&&layer->events[e-1].id>=event->id)))return 0;
    for(int a=0;a<=l;a++)for(int b=0;b<(a==l?e:bank->layers[a].count);b++)if(bank->layers[a].events[b].id==event->id)return 0;
   }
@@ -121,6 +126,21 @@ int sw_song_publish(const struct SongBank *bank,uint64_t generation,uint64_t epo
   }
  }return -1;
 }
+/* Guarded structural bank. Acknowledgment is published with the coherent
+ * snapshot; the UI must resolve it before admitting another musical command. */
+int sw_song_stage(const struct SongBank *bank,uint64_t generation,uint64_t epoch,uint64_t token,uint64_t guard_epoch,uint64_t guard_activity){
+ if(!generation||!epoch||!token||!lp_valid_bank(bank))return -2;
+ for(int i=0;i<LP_BANKS;i++){
+  int expected=0;
+  if(atomic_compare_exchange_strong(&lp_bank_state[i],&expected,1)){
+   memcpy(&lp_banks[i],bank,sizeof *bank);atomic_store_explicit(&lp_bank_state[i],2,memory_order_release);
+   int result=lp_enqueue((struct LoopCommand){.op=9,.a=i,.generation=generation,.epoch=epoch,.id=token,.guard_epoch=guard_epoch,.guard_activity=guard_activity});
+   if(result)atomic_store(&lp_bank_state[i],0);
+   return result;
+  }
+ }return -1;
+}
+int sw_song_cancel(uint64_t token){if(!token)return -2;return lp_enqueue((struct LoopCommand){.op=10,.id=token});}
 static void lp_set_cursor(int after){
  for(int l=0;l<8;l++){
   lp_cursor[l]=0;
@@ -204,27 +224,76 @@ static void lp_publish_fx(void){
   atomic_store(&manual_env[i],lp_manual[i].active?lp_manual[i].gain:0);atomic_store(&manual_pressure[i],lp_manual[i].pressure);atomic_fetch_add(&manual_versions[i],1);
  }
 }
+static void lp_apply_retire(const struct SongBank *bank);
+static int lp_guard(struct LoopCommand c){
+ if(c.guard_epoch!=lp_epoch||c.guard_activity!=lp_activity||c.epoch<=lp_epoch||c.generation<=lp_generation||lp_pending_tempo||atomic_load(&lp_credits))return 0;
+ for(int i=0;i<8;i++)if(lp_holds[i].token)return 0;
+ return 1;
+}
+static void lp_resolve_op(int apply){
+ struct LoopCommand c=lp_pending_op;if(!c.op)return;
+ if(apply&&lp_guard(c)){
+  lp_apply_retire(&lp_banks[c.a]);
+  lp_song=lp_banks[c.a];lp_epoch=c.epoch;lp_generation=c.generation;lp_tempo=lp_song.tempo;lp_pending_tempo=0;lp_length=lp_frames_for(lp_tempo);lp_activity++;
+  master_target=lp_song.master;
+  for(int l=0;l<8;l++)levels[l]=l<lp_song.count&&!lp_song.layers[l].muted?lp_song.layers[l].level:0;
+  lp_set_cursor(0);lp_op_status=1;
+ }else lp_op_status=-1;
+ lp_ack_token=c.id;atomic_store(&lp_bank_state[c.a],0);lp_pending_op=(struct LoopCommand){0};
+}
+static void lp_retire_layer(int l){
+ for(int i=0;i<LP_PLAYBACK;i++)if(lp_voices[i].active&&lp_voices[i].layer==l){lp_voices[i].held=0;lp_voices[i].retiring=441;}
+ for(int i=0;i<8;i++){
+  if(lp_manual[i].active&&lp_manual[i].layer==l){lp_manual[i].held=0;lp_manual[i].retiring=441;}
+  if(lp_manual_tail[i].active&&lp_manual_tail[i].layer==l){lp_manual_tail[i].held=0;lp_manual_tail[i].retiring=441;}
+ }
+ lp_bus[l].era++;lp_bus[l].frozen=0;lp_bus[l].env=lp_env[l]=0;
+ memset(lp_bus[l].grains,0,sizeof lp_bus[l].grains);memset(lp_bus[l].ap,0,sizeof lp_bus[l].ap);memset(lp_bus[l].low,0,sizeof lp_bus[l].low);
+ lp_bus[l].fade=441;
+}
+static void lp_apply_retire(const struct SongBank *bank){
+ for(int l=0;l<lp_song.count;l++){
+     int changed=(bank->retire_mask&(1<<l))||l>=bank->count||lp_song.layers[l].role!=bank->layers[l].role;
+     for(int e=0;e<lp_song.layers[l].count&&!changed;e++){
+      struct LoopEvent old=lp_song.layers[l].events[e];int found=0;
+      for(int n=0;n<bank->layers[l].count;n++)if(old.id==bank->layers[l].events[n].id&&old.pitch==bank->layers[l].events[n].pitch)found=1;
+      if(!found)changed=1;
+     }
+     if(changed)lp_retire_layer(l);
+    }
+}
 static void lp_process(void){
  unsigned t=atomic_load_explicit(&lp_tail,memory_order_relaxed),h=atomic_load_explicit(&lp_head,memory_order_acquire);
  while(t!=h){
   struct LoopCommand c=lp_commands[t];
+  if(c.op==10){if(lp_pending_op.op&&lp_pending_op.id==c.id)lp_resolve_op(0);}
+  if(c.op==9){
+   if(lp_pending_op.op||!lp_guard(c)){lp_ack_token=c.id;lp_op_status=-1;atomic_store(&lp_bank_state[c.a],0);}
+   else {lp_pending_op=c;lp_op_status=0;if(lp_transport!=2)lp_resolve_op(1);}
+  }
   if(c.op==7&&atomic_load_explicit(&lp_bank_state[c.a],memory_order_acquire)==2){
    if(c.generation<=lp_generation||c.epoch<lp_epoch){atomic_store(&lp_bank_state[c.a],0);t=(t+1)%QSIZE;continue;}
    if(c.epoch==lp_epoch&&!lp_merge_native(&lp_banks[c.a])){atomic_store(&lp_bank_state[c.a],0);lp_rejected++;t=(t+1)%QSIZE;continue;}
-   if(c.epoch!=lp_epoch){lp_cancel_holds();memset(lp_skip_count,0,sizeof lp_skip_count);}
+   if(c.epoch!=lp_epoch){
+    lp_cancel_holds();memset(lp_skip_count,0,sizeof lp_skip_count);
+    lp_apply_retire(&lp_banks[c.a]);
+   }
    for(int l=lp_song.count;l<lp_banks[c.a].count;l++)memcpy(lp_bus[l].p,lp_banks[c.a].layers[l].parameters,sizeof lp_bus[l].p);
+   int length_changed=lp_song.loop_beats!=lp_banks[c.a].loop_beats;
    lp_song=lp_banks[c.a];atomic_store(&lp_bank_state[c.a],0);lp_enabled=1;
    lp_epoch=c.epoch;lp_generation=c.generation;lp_activity++;
    if(lp_transport==2)lp_pending_tempo=lp_tempo!=lp_song.tempo?lp_song.tempo:0;
-   else {lp_tempo=lp_song.tempo;lp_length=lp_frames_for(lp_tempo);}
+   else {lp_tempo=lp_song.tempo;lp_pending_tempo=0;lp_length=lp_frames_for(lp_tempo);}
+   if(length_changed){lp_length=lp_frames_for(lp_tempo);if(lp_phase>=lp_length)lp_phase=0;}
    master_target=lp_song.master;
    for(int l=0;l<8;l++){levels[l]=l<lp_song.count&&!lp_song.layers[l].muted?lp_song.layers[l].level:0;}
    for(int i=0;i<LP_PLAYBACK;i++)if(lp_voices[i].active&&!lp_contains(lp_voices[i].id,lp_voices[i].layer))lp_voices[i].held=0;
    lp_set_cursor(0);
   }
   if(c.op==1){
+   if(lp_pending_op.op)lp_resolve_op(0);
    lp_activity++;
-   if(c.a==0){for(int i=0;i<8;i++)if(lp_holds[i].token)lp_finish(i,2);for(int i=0;i<LP_PLAYBACK;i++)lp_voices[i].held=0;lp_transport=0;transport_target=0;stopping=1;}
+   if(c.a==0){for(int i=0;i<8;i++)if(lp_holds[i].token)lp_finish(i,2);for(int i=0;i<LP_PLAYBACK;i++)lp_voices[i].held=0;lp_transport=0;lp_tempo=lp_song.tempo;lp_pending_tempo=0;lp_length=lp_frames_for(lp_tempo);transport_target=0;stopping=1;}
    else {lp_epoch=c.epoch;lp_transport=c.a;
     if(c.a==1)for(int l=0;l<lp_song.count;l++)if(lp_song.layers[l].count)lp_transport=2;
     lp_origin=lp_clock;lp_phase=lp_cycle=0;lp_boundary=lp_clock;lp_set_cursor(0);transport_target=1;stopping=0;}
@@ -264,7 +333,7 @@ static void lp_process(void){
    levels[c.a]=lp_song.layers[c.a].muted?0:lp_song.layers[c.a].level;lp_activity++;
   }
   if(c.op==8){lp_song.master=c.value;master_target=c.value;lp_activity++;}
-  if(c.op==6){if(lp_transport==2)lp_pending_tempo=lp_tempo!=c.value?c.value:0;else{lp_tempo=c.value;lp_length=lp_frames_for(lp_tempo);}lp_activity++;}
+  if(c.op==6){lp_song.tempo=c.value;if(lp_transport==2)lp_pending_tempo=lp_tempo!=c.value?c.value:0;else{lp_tempo=c.value;lp_pending_tempo=0;lp_length=lp_frames_for(lp_tempo);}lp_activity++;}
   t=(t+1)%QSIZE;
  }atomic_store_explicit(&lp_tail,t,memory_order_release);
 }
@@ -282,6 +351,7 @@ static void lp_sample(float *left,float *right){
    if(lp_phase>=lp_length){
     for(int i=0;i<8;i++)if(lp_holds[i].capture&&lp_pending_tempo)lp_finish(i,4);
     lp_phase=0;lp_cycle++;lp_boundary=lp_clock;
+    if(lp_pending_op.op)lp_resolve_op(1);
     if(lp_pending_tempo){lp_tempo=lp_pending_tempo;lp_pending_tempo=0;lp_length=lp_frames_for(lp_tempo);}
     lp_set_cursor(0);
    }
@@ -293,16 +363,17 @@ static void lp_sample(float *left,float *right){
    atomic_store(&position,(int)(lp_phase*8/lp_length));
   }
   float buses[8]={0};
-  for(int i=0;i<LP_PLAYBACK;i++){if(lp_voices[i].held&&lp_clock>=lp_voices[i].deadline)lp_voices[i].held=0;if(lp_voices[i].active)buses[lp_voices[i].layer]+=lp_voice_sound(&lp_voices[i],i);}
+  for(int i=0;i<LP_PLAYBACK;i++){if(lp_voices[i].held&&lp_clock>=lp_voices[i].deadline)lp_voices[i].held=0;if(lp_voices[i].active){int retiring=lp_voices[i].retiring;float v=lp_voice_sound(&lp_voices[i],i);if(retiring){*left+=v*track_gain[lp_voices[i].layer];*right+=v*track_gain[lp_voices[i].layer];}else buses[lp_voices[i].layer]+=v;}}
   for(int i=0;i<8;i++){
-   if(lp_manual[i].active)buses[lp_manual[i].layer]+=lp_voice_sound(&lp_manual[i],LP_PLAYBACK+i);
-   if(lp_manual_tail[i].active)buses[lp_manual_tail[i].layer]+=lp_voice_sound(&lp_manual_tail[i],LP_PLAYBACK+8+i);
+   if(lp_manual[i].active){int retiring=lp_manual[i].retiring;float v=lp_voice_sound(&lp_manual[i],LP_PLAYBACK+i);if(retiring){*left+=v*track_gain[lp_manual[i].layer];*right+=v*track_gain[lp_manual[i].layer];}else buses[lp_manual[i].layer]+=v;}
+   if(lp_manual_tail[i].active){int retiring=lp_manual_tail[i].retiring;float v=lp_voice_sound(&lp_manual_tail[i],LP_PLAYBACK+8+i);if(retiring){*left+=v*track_gain[lp_manual_tail[i].layer];*right+=v*track_gain[lp_manual_tail[i].layer];}else buses[lp_manual_tail[i].layer]+=v;}
   }
   for(int l=0;l<lp_song.count;l++)lp_effect(l,buses[l],left,right);
   if(lp_transport==2)lp_phase++;
  }memset(lp_skip_count,0,sizeof lp_skip_count);lp_clock++;
 }
 static void lp_reset(void){
+ lp_pending_op=(struct LoopCommand){0};lp_ack_token=0;lp_op_status=0;
  lp_dsp_reset();memset(lp_skip_count,0,sizeof lp_skip_count);memset(&lp_song,0,sizeof lp_song);memset(lp_holds,0,sizeof lp_holds);memset(lp_manual,0,sizeof lp_manual);memset(lp_manual_tail,0,sizeof lp_manual_tail);memset(lp_voices,0,sizeof lp_voices);memset(lp_cursor,0,sizeof lp_cursor);
  atomic_store(&lp_head,0);atomic_store(&lp_tail,0);atomic_store(&lp_take_head,0);atomic_store(&lp_take_tail,0);atomic_store(&lp_credits,0);
  for(int i=0;i<LP_BANKS;i++)atomic_store(&lp_bank_state[i],0);

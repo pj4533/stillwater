@@ -20,6 +20,7 @@ class Integration(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory(dir=ROOT/'.build');self.addCleanup(self.tmp.cleanup)
   self.m=LoopModel(Path(self.tmp.name)/'current-v2.json',writer=False,seed=2)
+  self.m.state=replace(self.m.state,loop_beats=16)  # Retained V2 fixture.
   self.e=LoopEngine(ROOT/'.build/engine.so');self.e.lib.sw_reset();self.e.lib.sw_render.argtypes=[C.POINTER(C.c_float),C.c_int]
   self.i=LoopInstrument(self.m,self.e);self.audio(1)
  def audio(self,n):
@@ -34,7 +35,11 @@ class Integration(unittest.TestCase):
   self.assertEqual(self.e.loop_stats()['transport'],1)
   self.wire([0x92,99,90]);self.audio(64);self.wire([0x82,99,0]);self.audio(1);self.i.tick()
   self.assertEqual(len(self.m.state.layers[0].events),1)
-  for _ in range(7):self.wire([0xb0,92,127]);self.audio(1)
+  for _ in range(7):
+   self.wire([0xb0,92,127]);self.audio(1)
+   role=next(r for r in __import__('roles').ROLE_IDS if self.m.role_state(r)=='READY')
+   self.wire([0xb0,102+__import__('roles').ROLE_IDS.index(role),127]);self.audio(1)
+   self.wire([0x92,60,90]);self.audio(32);self.wire([0x82,60,0]);self.audio(1);self.i.tick()
   roles=tuple(l.role for l in self.m.state.layers);self.wire([0xb0,92,127]);self.audio(1)
   self.assertEqual(tuple(l.role for l in self.m.state.layers),roles)
   self.wire([0xb0,102,127,49,127,50,127,49,0]);self.assertFalse(self.m.overdub)

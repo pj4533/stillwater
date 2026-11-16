@@ -11,6 +11,10 @@ from loop_model import blank,Layer
 from loop_engine import LoopEngine
 from roles import ROLE_IDS,DEFAULTS
 
+_v3_blank=blank
+def blank(*args,**kwargs):return replace(_v3_blank(*args,**kwargs),loop_beats=16)
+
+
 class DSP(unittest.TestCase):
  def setUp(self):
   self.e=LoopEngine(ROOT/'.build/engine.so');self.e.lib.sw_render.argtypes=[C.POINTER(C.c_float),C.c_int]

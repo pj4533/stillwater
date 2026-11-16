@@ -4,7 +4,7 @@
 #define STRING_SIZE 2048
 struct LoopDSP { float string[STRING_SIZE],z[8],modes[6],freq,phase2;unsigned cursor,noise; };
 struct LoopGrain { float position,step;unsigned age,length; };
-struct LoopBus { uint32_t stamps[FX_SIZE],era;float ring[FX_SIZE][2],p[8],low[2],ap[4],phase,phase2,reverse_phase,drop,env;unsigned cursor,grain_clock,noise;int frozen;struct LoopGrain grains[6]; };
+struct LoopBus { uint32_t stamps[FX_SIZE],era;float ring[FX_SIZE][2],p[8],low[2],ap[4],phase,phase2,reverse_phase,drop,env;unsigned cursor,grain_clock,noise;int frozen,fade;float last[2];struct LoopGrain grains[6]; };
 static struct LoopDSP lp_dsp[LP_PLAYBACK+16];
 static struct LoopBus lp_bus[8];
 static _Atomic float lp_fx[8][3];
@@ -23,6 +23,7 @@ static void lp_voice_init(struct LoopVoice *v,int index){
 }
 static float lp_voice_sound(struct LoopVoice *v,int index){
  if(!v->active)return 0;
+ if(v->retiring){v->gain*=((float)(v->retiring-1)/v->retiring);if(!--v->retiring){v->active=0;return 0;}}
  struct LoopDSP *d=&lp_dsp[index];int role=lp_song.layers[v->layer].role;float *p=lp_bus[v->layer].p;
  v->pressure+=(v->target-v->pressure)*.00028f;
  float attack=.003f,release=.00008f;
@@ -129,6 +130,8 @@ static void lp_effect(int layer,float input,float *left,float *right){
  l+=dl*wet;r+=dr*wet;
  b->env+=(fabsf(l)+fabsf(r)-b->env)*.003f;lp_env[layer]=fminf(1,b->env*8);
  lp_fx_values[layer][0]=lp_env[layer];lp_fx_values[layer][1]=aux;lp_fx_values[layer][2]=(slow+1)*.5f;
+ if(b->fade){float f=(float)b->fade/441;l+=b->last[0]*f;r+=b->last[1]*f;b->fade--;}
+ else {b->last[0]=l;b->last[1]=r;}
  *left+=l*track_gain[layer];*right+=r*track_gain[layer];
 }
 static void lp_dsp_reset(void){memset(lp_dsp,0,sizeof lp_dsp);memset(lp_bus,0,sizeof lp_bus);memset(lp_env,0,sizeof lp_env);memset(lp_fx_values,0,sizeof lp_fx_values);for(int l=0;l<8;l++){lp_bus[l].era=1;lp_bus[l].drop=1;lp_bus[l].noise=l+1;for(int m=0;m<3;m++)atomic_store(&lp_fx[l][m],0);}}

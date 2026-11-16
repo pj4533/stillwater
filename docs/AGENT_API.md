@@ -26,7 +26,7 @@ dirty/durable revision and recording/capture/export status.
 
 Read `LoopInstrument.operation` in src/loop_app.py and Bottle/SessionRecorder for
 optional fields/validation. Old query_state/Grow/garden proposals and tone/decay
-operations are unsupported in V2. Explicit backpressure errors happen before
+operations are unsupported in V3. Explicit backpressure errors happen before
 mutation; retry deliberately. Query whether a non-idempotent operation completed
 before retrying. Do not edit session files directly while the app runs.
 
@@ -45,3 +45,10 @@ with master zero, restoring exact current state/history after probes. Never open
 a second physical MIDI reader. Pressure follows a manual token; full-MPE slide
 or pitch semantics are not promised. Worker threads must never become another
 audio command producer.
+
+V3 controls use the same event path: CC86 toggles note recording only, Shift49
+plus Record86 controls film, Scale58 opens KEY, Clip113 opens LOOP, Repeat56
+stages Add Bar and Delete118 clears selected notes. KEY encoders71/72 adjust root
+and mode; LOOP encoder71 adjusts BPM. Release Shift after combinations. Query
+pending takes/structural status before edits; a length request may refuse while
+a pad is held. Never retry a non-idempotent Add Bar without checking its result.

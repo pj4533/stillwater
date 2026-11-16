@@ -17,7 +17,7 @@ def main():
  engine=LoopEngine(ROOT/'.build/engine.so');engine.lib.sw_render.argtypes=[C.POINTER(C.c_float),C.c_int]
  pcm=(C.c_float*128)()
  layers=tuple(Layer(i,r,parameters=(.3,)*8,events=tuple(Event(i*256+j+1,62,.5,j*6000,100) for j in range(255))) for i,r in enumerate(ROLE_IDS))
- dense=replace(blank(seed=1),role_order=ROLE_IDS,layers=layers);durations=[]
+ dense=replace(blank(seed=1),loop_beats=16,role_order=ROLE_IDS,layers=layers);durations=[]
  with tempfile.TemporaryDirectory(dir=ROOT/'.build') as temp:
   for _ in range(40):
    model=LoopModel(Path(temp)/'current-v2.json',writer=False);model.state=dense;model.next_id=2049
