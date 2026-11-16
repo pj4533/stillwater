@@ -1,4 +1,4 @@
-"""Continuous keyboard, idle input ownership and the complete Push button map."""
+"""Overlapping scale keyboard, idle input ownership and the complete Push button map."""
 import ctypes as C
 from dataclasses import replace
 from pathlib import Path
@@ -25,19 +25,19 @@ class PlayControls(unittest.TestCase):
   self.assertTrue(all(abs(x)<2 for x in pcm))
  def wire(self,kind,number,value,channel=0):
   return self.i.wire(dict(kind=kind,number=number,value=value,channel=channel))
- def test_all_roots_modes_windows_have_64_contiguous_unique_degrees(self):
+ def test_all_roots_modes_windows_have_original_overlapping_degrees(self):
   for root in range(60,72):
    for scale in MODES:
     for octave in range(-4,5):
-     low=degree_pitch(-31+7*octave,root,scale);high=degree_pitch(32+7*octave,root,scale)
+     low=degree_pitch(-14+7*octave,root,scale);high=degree_pitch(14+7*octave,root,scale)
      if not 0<=low<=high<=127:
       for pad in (36,99):
        with self.assertRaises(ValueError):pad_pitch(pad,octave,root,scale)
       continue
      pitches=[pad_pitch(p,octave,root,scale) for p in range(36,100)]
-     self.assertEqual(len(set(pitches)),64)
-     self.assertEqual(pitches,sorted(pitches));self.assertTrue(all(0<=p<=127 for p in pitches))
-     self.assertEqual(pitches,[degree_pitch(d,root,scale) for d in range(-31+7*octave,33+7*octave)])
+     self.assertEqual(len(set(pitches)),29)
+     self.assertTrue(all(0<=p<=127 for p in pitches))
+     self.assertEqual(pitches,[degree_pitch(-14+7*octave+c+3*r,root,scale) for r in range(8) for c in range(8)])
  def test_every_pad_native_pitch_and_led_is_one_exact_absolute_note(self):
   for pad in range(36,100):
    self.wire('note',pad,70);self.audio(1)
@@ -45,8 +45,32 @@ class PlayControls(unittest.TestCase):
    self.assertTrue(stats['pitches']['gate'][0][pitch]&1)
    with patch('v4_controls.time.monotonic',return_value=pad):leds=led_values(self.m,stats,self.i)
    active=[p for p in range(36,100) if leds['note',p]==ROLE_PALETTE['silt'][0]]
-   self.assertEqual(active,[pad])
+   self.assertEqual(active,[p for p in range(36,100) if pad_pitch(p)==pitch])
    self.wire('note_off',pad,0);self.audio(1)
+ def test_movable_triad_triangle_across_rows_roots_modes_and_octaves(self):
+  for root in range(60,72):
+   for scale in MODES:
+    for octave in range(-4,5):
+     try:pad_pitch(36,octave,root,scale)
+     except ValueError:continue
+     for row in range(7):
+      for col in range(6):
+       pad=36+8*row+col;degree=-14+7*octave+3*row+col
+       self.assertEqual([pad_pitch(p,octave,root,scale) for p in (pad,pad+2,pad+9)],
+                        [degree_pitch(degree+d,root,scale) for d in (0,2,4)])
+  self.assertEqual([pad_pitch(p,0,60,'major') for p in (36,38,45)],[36,40,43])
+  self.assertEqual((pad_pitch(36),pad_pitch(99)),(38,86))
+ def test_triangle_records_exact_pitches_and_survives_saved_roundtrip(self):
+  self.i.performance.play()
+  for pad in (36,38,45):self.wire('note',pad,80)
+  self.audio(2048)
+  for pad in (36,38,45):self.wire('note_off',pad,0)
+  self.audio(1);self.i.performance.drain();self.i.performance.stop();self.audio(1)
+  song=self.m.state;self.assertEqual(sorted(e.pitch for e in song.layers[0].events),[38,41,45])
+  restored=decode_song(json_ready(song));self.assertEqual(restored,song)
+  self.e.publish(restored,self.m.capture_epoch);self.audio(1);self.i.performance.play();self.audio(2048)
+  self.assertEqual(self.m.state,song)
+  for pitch in (38,41,45):self.assertTrue(self.e.pitches()['gate'][0][pitch]&2)
  def test_full_native_range_capture_validation_and_legacy_song_unchanged(self):
   before=json_ready(self.m.state)
   for pitch in (0,8,24,96,117,127):

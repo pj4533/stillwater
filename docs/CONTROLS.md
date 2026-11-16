@@ -5,7 +5,7 @@ KEY picker.** Clip opens LOOP, whose first two lower buttons also open LOOPS and
 RECORDINGS. Note/Device returns to the instrument. Managers take the screen
 buttons and encoders; pads, Play/Stop, Volume and Hold Settings still work.
 Physical Save always saves a new song snapshot. Musical Record still toggles
-note overdub. Musical recording and film recording are separate. All actionable global buttons stay lit, including New and Shift; Shift brightens New. See [continuous pads and input diagnosis](CONTROL_FIXES.md).
+note overdub. Musical recording and film recording are separate. All actionable global buttons stay lit, including New and Shift; Shift brightens New. See [scale pads and input diagnosis](CONTROL_FIXES.md).
 
 Film starts **OFF**. Play and notes never start it. On RECORDINGS/CURRENT,
 lower20 START FILM begins screen+stereo capture; lower21 STOP+SAVE finishes and
@@ -68,7 +68,7 @@ Existing V2 music keeps its original four-bar loop and exact performed notes.
   recorded foundation+middle unlock accents. Used/locked roles explain their
   state. Selecting an existing layer keeps its sound and notes.
 - **Scale** opens KEY: choose root/mode, then Apply or Cancel as described above.
-  Left/Right shifts the complete pad octave window. All64 pads are unique successive scale notes, continuing row by row across MIDI0–127; octave counterparts are different pitches. An octave move is refused if the complete window cannot fit.
+  Left/Right shifts the complete pad octave window. Right advances one scale degree; up advances three (a diatonic fourth). Duplicate pitches are intentional and share exact-pitch feedback. The original centered register is restored; valid windows fit MIDI0–127. An octave move is refused if the complete window cannot fit.
 - **Delete** clears just the selected layer's notes. Its sound, macros, level and
   mute remain. Undo restores the phrase. Late unfinished takes cannot return.
 - **Note / Device** shows eight source-material mechanisms and macro values;

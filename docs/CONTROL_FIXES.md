@@ -1,4 +1,4 @@
-# Continuous pads and visible controls
+# Overlapping scale pads and visible controls
 
 This V5 follow-up uses paired native ABI6 with song schema3. Install source and
 engine together; an ABI5 engine is rejected before opening audio. Saved music,
@@ -6,14 +6,15 @@ Undo/Redo, gentle sound versions and synthesis defaults are retained. Loading
 existing songs does not transpose them. A song recorded outside MIDI24–96 will
 be rejected by older builds: preserve newer music before rolling code back.
 
-The 64 pads form one ascending keyboard: eight successive scale notes per row,
-then the next eight on the row above. Every pad has a different absolute pitch;
-octave counterparts remain different notes. The selected root lies near the
-center of the default window (degree -31 through +32). All12 roots/seven modes
-fit MIDI0–127. Left/Right shifts a whole octave only when the complete window
-fits; an out-of-range window is refused, never clipped into repeated notes.
-Playback lights the one pad with that exact absolute pitch. Notes outside the
-visible scale/window have no substitute pad. Existing notes keep their pitches.
+The restored overlapping grid advances one scale degree to the right and three
+scale degrees up a row (a diatonic fourth). Its formula is
+`column + 3*row - 14 + 7*octave`. D Dorian defaults span MIDI38–86,
+29 distinct pitches across64pads; duplicates are intentional. The triangle
+(row0,col0), (row0,col2), (row1,col1) plays scale degrees0,2,4 relative
+to its first note: C/E/G in C major. Moving the shape gives diatonic triads.
+Left/Right shifts the complete window only when every pitch fits MIDI0–127.
+Playback lights every pad with the exact absolute pitch, including duplicate
+positions. Octave counterparts remain distinct. Existing saved notes are unchanged.
 
 Every globally actionable physical button has a resting light, including New,
 Shift, Save, Undo, Stop Clips, Device, Settings and arrows. New brightens while
@@ -51,7 +52,7 @@ input and should not be published. It cannot distinguish a physical knob turn
 from a synthetic local socket event, and pending native take completion may also
 advance a revision during dispatch.
 
-## Reviewed local validation
+## Previous continuous-layout local validation (historical)
 
 The channel0 guard covers both global CC dispatch and contextual KEY/Load
 mutation classification. Nonzero-channel Apply cannot cancel a pending operation.
@@ -69,7 +70,7 @@ recorded separately after controlled rollout. These checks do not establish
 physical hue or listening acceptance and do not resolve the unreproduced Tone
 oscillation.
 
-## Actual Push validation
+## Previous continuous-layout Push validation (historical)
 
 The reviewed release `a4f62a4ca09377807c36322abf637eecbc5f04b0` is installed
 with the ABI6 native hash above.92/92staged files matched on device. A disposable
@@ -88,3 +89,19 @@ and restored the original transient controls. This deployment procedure correcti
 does not explain the reported Spore Tone/SAVED oscillation, which remains
 unreproduced and unresolved. Physical hue/brightness, feel and listening acceptance
 remain unverified.
+
+## Restored overlapping scale layout
+
+At the player’s request the earlier +1right/+3up geometry and centered register
+are restored, retaining ABI6, all lighting/input fixes and the opt-in diagnostic.
+The movable triangle is tested across12roots,7modes, valid octave windows, all
+7row pairs and6horizontal positions; major/minor qualities follow the scale.
+No saved note, song, history or synthesis default is rewritten by this change.
+The previous continuous-layout release and device results above are historical.
+
+Restoration validation: private294tests and public299tests passed, including
+13focused regressions. The triangle records exact pitches and survives saved
+roundtrip/native playback; exhaustive geometry tests cover scale and octave
+boundaries. Public host native build passed. Native C is unchanged and the
+verified ABI6 device artifact above is retained.46/46runtime hashes match both
+source checkouts. Actual restoration deployment results follow separately.

@@ -202,13 +202,12 @@ def legacy_master(path):
 
 def pad_pitch(pad,octave=0,root=62,scale='dorian'):
     integer(pad,36,99);integer(octave,-4,4)
-    # One continuous diatonic keyboard: each row continues after eight notes.
-    # Root lies near the center. Reject the entire octave window at MIDI limits;
-    # never clamp individual notes into duplicate pitches.
-    start=-31+7*octave
-    low=degree_pitch(start,root,scale);high=degree_pitch(start+63,root,scale)
+    # Traditional overlapping scale grid: right advances one degree, up three.
+    # Keep the original centered register; reject a whole invalid octave window.
+    start=-14+7*octave
+    low=degree_pitch(start,root,scale);high=degree_pitch(start+28,root,scale)
     if low<0 or high>127:raise ValueError('octave exceeds complete pad window')
-    return degree_pitch(start+pad-36,root,scale)
+    return degree_pitch(start+(pad-36)%8+3*((pad-36)//8),root,scale)
 
 
 def atomic_write(path,payload,no_replace=False):

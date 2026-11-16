@@ -25,7 +25,7 @@
     "src/loop_engine.py": "b3375d652adbe8d32e99c33b29ee498f208acf59609149f19a69862fe296783c",
     "src/loop_export.py": "2e434fcaa5b0138b059ff2d68eb37817990445ba1b66ce3dfb6e47a96c2847ea",
     "src/loop_graphics.py": "541b5838a988aba86bb5c8af0c020c6f7405ee673aaeaf317615c5d7f26599be",
-    "src/loop_model.py": "1cefeade6ca5a85a89a44b6536b0f80a4467dd91ffe33c9987f284ec8cd0e67c",
+    "src/loop_model.py": "5227fb2ffd36ab7ff125f26f73531daccb1e0e65e60b8e55003d102d6f459adf",
     "src/loop_native.h": "6e714440c949855e6729811fbbaeeb66e812a45ceba39b4de1b9fc5a128782c3",
     "src/management_graphics.py": "0bee7a586d2770a3cfe279465ca34a20873e859cffd5fd647c3e46f0a92cb67e",
     "src/midi.py": "7fc58283a3d8d8cbe5b226d636c7dad70761ed1a67325e4c36c8882020e0e0ae",

@@ -96,7 +96,11 @@ Do not delete an ownership registry to get past a blocked start.
 Copy the entire stopped `/data/push-ambient` to a uniquely named private backup
 on the device and off-device, including sessions, histories, recordings, enabled
 preference, recovery/original stock script and existing engine/source. Record
-hashes. Keep enough free space. A first installation must also privately preserve
+hashes. Keep enough free space. Subsequent updates may reuse a retained verified
+recordings backup only when the stopped live recording inventory still matches
+its verified inode/size/mtime/hash; take a fresh source/engine/session/history
+backup and record the retained media dependency. Never hash/copy large media
+while the hardware owner is running. A first installation must also privately preserve
 `/etc/init.d/push3` verbatim before replacing it. Never publish that vendor file.
 The installer additionally saves it once as `recovery/push3.stock`; never replace
 that backup with a copy of an already-installed selector.

@@ -57,7 +57,7 @@ class ModelV3(unittest.TestCase):
    for mode in MODES:
     self.m.rekey(root,mode,now=0)
     e=self.m.state.layers[0].events[0];self.assertEqual(e.degree,canonical);self.assertEqual(e.pitch,project_degree(canonical,root,mode))
-    pitches=[pad_pitch(n,0,root,mode) for n in range(36,100)];self.assertEqual(len(set(pitches)),64)
+    pitches=[pad_pitch(n,0,root,mode) for n in range(36,100)];self.assertEqual(len(set(pitches)),29)
     self.assertTrue(all(0<=p<=127 and (p-root)%12 in MODES[mode] for p in pitches))
     for d in (-22,-21,20,21):
      pitch=project_degree(d,root,mode);self.assertTrue(0<=pitch<=127);self.assertIn((pitch-root)%12,MODES[mode])
@@ -104,23 +104,23 @@ class NativeV3(unittest.TestCase):
  def test_window_normalizes_after_cc_undo_structural_history_load_and_new(self):
   import queue
   from types import SimpleNamespace
-  self.wire(58);self.wire(71,124);self.wire(71,124);self.wire(27);self.wire(50);self.wire(63)
-  self.assertEqual((self.m.state.root,self.m.octave),(60,1));self.assert_pad_window()
+  self.m.state=replace(self.m.state,root=60);self.m.octave=3
+  self.m.undo_stack=(replace(self.m.state,root=71),)
   self.wire(119);self.audio(1)
-  self.assertEqual((self.m.state.root,self.m.octave),(62,0));self.assert_pad_window()
+  self.assertEqual((self.m.state.root,self.m.octave),(71,2));self.assert_pad_window()
   # Length-changing history acknowledgment must normalize the restored key too.
-  self.m.state=replace(self.m.state,root=60);self.m.octave=1
-  self.m.undo_stack=(replace(self.m.state,root=62,loop_beats=8),)
-  self.p.undo();self.audio(1);self.p.drain();self.assert_pad_window();self.assertEqual(self.m.octave,0)
+  self.m.state=replace(self.m.state,root=60);self.m.octave=3
+  self.m.undo_stack=(replace(self.m.state,root=71,loop_beats=8),)
+  self.p.undo();self.audio(1);self.p.drain();self.assert_pad_window();self.assertEqual(self.m.octave,2)
   results=queue.Queue();self.m.writer=SimpleNamespace(results=results,submit=lambda *args:None)
-  self.m.state=replace(self.m.state,root=60);self.m.octave=1
+  self.m.state=replace(self.m.state,root=60);self.m.octave=3
   self.m.replacement_request=(1,'load')
-  results.put(dict(kind='load',request_token=1,revision=self.m.revision,payload=dict(state=replace(self.m.state,root=62))))
-  self.m.poll_tasks();self.assert_pad_window();self.assertEqual(self.m.octave,0)
-  self.m.state=replace(self.m.state,root=60);self.m.octave=1
+  results.put(dict(kind='load',request_token=1,revision=self.m.revision,payload=dict(state=replace(self.m.state,root=71))))
+  self.m.poll_tasks();self.assert_pad_window();self.assertEqual(self.m.octave,2)
+  self.m.state=replace(self.m.state,root=60);self.m.octave=3
   self.m.replacement_request=(2,'archive')
   results.put(dict(kind='archive',request_token=2,revision=self.m.revision))
-  self.m.poll_tasks();self.assert_pad_window();self.assertEqual(self.m.octave,0)
+  self.m.poll_tasks();self.assert_pad_window();self.assertEqual(self.m.octave,3)
   self.m.writer=None
  def test_bad_pad_pitch_does_not_reserve_capture(self):
   self.start();self.m.octave=4;before=(dict(self.m.pending),self.m.next_id,self.p.token)
