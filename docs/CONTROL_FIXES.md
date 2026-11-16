@@ -68,3 +68,23 @@ staging uses the rebuilt strict public artifact. Device installation/health is
 recorded separately after controlled rollout. These checks do not establish
 physical hue or listening acceptance and do not resolve the unreproduced Tone
 oscillation.
+
+## Actual Push validation
+
+The reviewed release `a4f62a4ca09377807c36322abf637eecbc5f04b0` is installed
+with the ABI6 native hash above.92/92staged files matched on device. A disposable
+master-zero session under the sole ALSA/MIDI/display owner passed85checks:
+all64exact native pitches and emitted pad LEDs,19global action lights, distinct
+Record7/5, Shift/New/contextual pages, stopped held Spore pressure, diagnostic
+capture/expiry, and16seconds of stable stopped Spore macros/revision.
+Normal supervision resumed with the existing saved music/history/media unchanged.
+61samples over61.044seconds showed zero xruns/peak, stable clean saved revision,
+and advancing audio/display counters. No second MIDI reader was opened.
+
+An initial rollout attempt aborted before installation when the previous runtime
+USB display returned ENOMEM during a large live backup and its supervisor
+recovered. The retry verified the complete backup with the hardware owner stopped
+and restored the original transient controls. This deployment procedure correction
+does not explain the reported Spore Tone/SAVED oscillation, which remains
+unreproduced and unresolved. Physical hue/brightness, feel and listening acceptance
+remain unverified.
