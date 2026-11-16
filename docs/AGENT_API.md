@@ -1,7 +1,7 @@
 Deployed loop browser adds `management.loaded_source`: null for unknown/unnamed,
 otherwise controlled saved-file `id`, display `name`, Boolean `modified`/`deleted`.
 It is separate from `selected_id`. Browse LOOPS/SAVED RECORDINGS with channel0
-CC70 (four relative units/row) or93/95 (press one row); Volume79 stays master.
+CC70 (one row per nonzero relative packet) or93/95 (press one row); Volume79 stays master.
 No wheel press confirmation: lower27 remains the deliberate labeled action.
 See CONTROL_FIXES.md for persistence and conservative edit semantics.
 

@@ -21,7 +21,8 @@ implied download/upload. Paths are `/data/push-ambient/recordings/film-<id>.mp4`
 `loop-<timestamp>-<id>.wav` and `bottle-<timestamp>-<id>.wav`.
 
 LOOPS shows four saved snapshots at a time. Turn the large right navigation
-wheel to select slowly (CC70, four relative units per row); nudge it left/right
+wheel to select one item per step (CC70, each nonzero message moves one row);
+nudge it left/right
 (CC93/95) for one row. Left/Right arrow buttons page. Selection never loads
 by itself. The same wheel browses RECORDINGS/SAVED. Volume (CC79) stays master.
 The separate LOADED label names the saved source and its short file ID; the

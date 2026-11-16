@@ -11,7 +11,8 @@ https://github.com/danielknng/push3-protocol-docs/blob/0d843cd69a7a0d2c52eddb46a
 Its Jog Wheel section assigns the large right navigation wheel CC70 rotation,
 CC93/95 discrete left/right nudges, CC94 press and CC11 touch. Its Master Volume
 section assigns CC79. Screen encoders remain CC71–78. LOOPS and RECORDINGS/SAVED
-use slow accumulated CC70 or one-row nudges, with clamping and no automatic load.
+use immediate one-row CC70 steps or nudges, with clamping and no automatic load.
+The original four-unit browser slowdown was removed in the sensitivity follow-up.
 Wheel press/touch do not confirm; screen encoders remain for rename/key editing.
 
 An optional source object in the existing envelope tracks the actual saved-file

@@ -73,14 +73,13 @@ class ManagementUI:
         self.manager=manager;self.page_generation=0;self.rows=[];self.selected_id=None;self.manager_busy=False
         self.confirm=None;self.details=False;self.record_tab='current';self.return_view='instrument'
         self.key_draft=None;self.slow=[SlowChoice() for _ in range(8)];self.rename=None;self.rename_cursor=0;self.character=1
-        self.pitch_lights=PitchLights();self.browse_slow=SlowChoice()
+        self.pitch_lights=PitchLights()
     def open_page(self,page):
         if page not in ('library','recordings','key','instrument','mixer','overview','chooser'):raise ValueError('Invalid page')
         if self.model.view=='library':self.invalidate_library()
         if self.model.view not in ('library','recordings','key'):self.return_view=self.model.view
         self.page_generation+=1;self.manager_busy=False;self.confirm=None;self.details=False;self.rename=None
         for slow in self.slow:slow.reset()
-        self.browse_slow.reset()
         self.key_draft=[self.model.state.root,self.model.state.scale] if page=='key' else None
         self.model.view=page;self.library=None
         if page in ('library','recordings'):
@@ -142,7 +141,7 @@ class ManagementUI:
         if view not in ('library','recordings'):return False
         if number in (70,93,94,95,11):
             if self.rename is None and not self.confirm and (view=='library' or self.record_tab=='saved'):
-                if number==70 and delta:self.select_row(self.browse_slow.step(delta))
+                if number==70 and delta:self.select_row(1 if delta>0 else -1)
                 elif number in (93,95) and value:self.select_row(-1 if number==93 else 1)
             return True
         if number in range(71,79):

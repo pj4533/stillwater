@@ -1,8 +1,9 @@
 # Loop browser and saved-source identity — deployed 2026-11-16
 
 LOOPS and RECORDINGS/SAVED use the large right navigation wheel: CC70 scroll,
-CC93/95 one-row nudges. Scroll retains four-unit accumulation, idle/reversal
-reset, one-row maximum per packet and endpoint clamping. Encoder1 no longer
+CC93/95 one-row nudges. Every nonzero CC70 message immediately moves one row
+in its signed direction, without accumulation, timers or acceleration; endpoints
+clamp and even multiunit packets move at most one row. Encoder1 no longer
 browses; encoders1/2 still edit the rename cursor/character and KEY root/mode.
 Wheel press94 and touch11 are consumed without loading, deleting or editing.
 Confirmation and rename drafts pin the original target; wheel movement cannot

@@ -117,9 +117,9 @@ class Wheel(unittest.TestCase):
  def test_wheel_only_browses_both_single_selectors_bounded_and_clamped(self):
   for page in ('library','recordings'):
    self.rows(page);old=self.m.state
-   for _ in range(4):self.wire(70)
-   self.assertEqual(self.i.selected_id,'1');self.wire(70,63);self.assertEqual(self.i.selected_id,'2')
-   self.wire(70,127);self.wire(70,127);self.wire(70,127);self.wire(70,127);self.assertEqual(self.i.selected_id,'1')
+   self.wire(70);self.assertEqual(self.i.selected_id,'1')
+   self.wire(70,63);self.assertEqual(self.i.selected_id,'2')
+   self.wire(70,127);self.assertEqual(self.i.selected_id,'1')
    self.wire(95,127);self.wire(95,0);self.assertEqual(self.i.selected_id,'2')
    self.wire(93,127);self.assertEqual(self.i.selected_id,'1')
    for n in (71,72,78,94,11):self.wire(n,63)
@@ -128,6 +128,24 @@ class Wheel(unittest.TestCase):
    self.assertEqual(self.i.selected_id,'0')
    for _ in range(10):self.wire(95,127)
    self.assertEqual(self.i.selected_id,'7')
+ def test_each_raw_jog_message_moves_immediately_without_accumulation_or_acceleration(self):
+  for page in ('library','recordings'):
+   self.rows(page);before=self.m.state;history=self.m.undo_stack
+   parser=MidiParser()
+   # Fragmented packets, running status and realtime bytes use the production parser.
+   for chunk,expected in (([176,70],0),([1],1),([70,1,248,70,1],3),([70,127],2),([70,0],2),([70,127,70,1],2)):
+    for event in parser.feed(bytes(chunk)):self.i.wire(event)
+    self.assertEqual(self.i.selected_id,str(expected))
+   # Every valid 7-bit packet is immediate but bounded to one row, even extremes.
+   for value in range(128):
+    self.i.selected_id='3';self.wire(70,value)
+    self.assertEqual(self.i.selected_id,str(3 if value==0 else 4 if value<64 else 2))
+   for _ in range(12):self.wire(70,1)
+   self.assertEqual(self.i.selected_id,'7')
+   for _ in range(12):self.wire(70,127)
+   self.assertEqual(self.i.selected_id,'0')
+   self.assertIs(self.m.state,before);self.assertEqual(self.m.undo_stack,history)
+   self.assertIsNone(self.i.confirm);self.assertIsNone(self.i.transition)
  def test_nonzero_channel_zero_packets_confirmation_rename_and_current_do_not_browse(self):
   self.rows('library');self.wire(70,63,1);self.wire(70,0);self.assertEqual(self.i.selected_id,'0')
   self.i.confirm=dict(action='delete',row=self.i.rows[0]);self.wire(70,63);self.wire(95,127);self.assertEqual(self.i.selected_id,'0')
