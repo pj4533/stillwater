@@ -9,7 +9,10 @@ The display uses Linux usbfs ioctls directly, **not libusb**. Install ALSA utili
 for `amidi`, plus FFmpeg/ffprobe with H.264/AAC for media workflows. On Debian-like
 systems the relevant packages are `build-essential python3 python3-venv
 python3-pip alsa-utils libasound2 ffmpeg binutils` (ALSA package names vary).
-Pillow is offline tooling only, never needed on Push.
+Pillow is offline tooling only, never needed on Push. Keep at least2GiB free
+on the filesystem containing the checkout/.build: media tests exercise real
+admission thresholds (1GiB at film start), so a512MB temporary filesystem
+cannot run the full suite even when the code/build itself fits.
 
 ```sh
 python3 -m venv .venv

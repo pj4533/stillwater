@@ -29,6 +29,11 @@ it is not a substitute for reviewing every staged file.
 - All210existing unit/native tests passed in22.707s; two added fresh-payload safety
   tests passed in0.004s (runtime-only selection/refusal to overwrite existing state,
   and rejection of incomplete encoder bundles before creating a destination).
+- A clean Git archive outside the original checkout also built successfully and
+  passed all212tests in22.688s. An initial fresh-copy run on a512MB temporary
+  filesystem failed media disk-reserve admission (12failures/7errors); repeating
+  on a filesystem with adequate space passed without source changes. DEVELOPMENT
+  now states the2GiB recommendation and1GiB film-start threshold.
 - `python3 scripts/rehearse-v2.py`:25production-workflow checks passed on the
   build host, without hardware/audio output. Eight roles, persistence/undo/library,
   stopped silence, actual film and exact-loop WAV were exercised.
@@ -39,7 +44,7 @@ it is not a substitute for reviewing every staged file.
   status, stopped transport, SIGTERM exit0 and ready removal. First attempt on a
   shared bind mount could not chmod the socket; corrected run on local Linux
   filesystem passed. No production code change was needed for that limitation.
--19local Markdown links checked, zero missing targets (external URLs are source
+-20local Markdown links checked, zero missing targets (external URLs are source
   references, not a claim of availability forever).
 - Recursive text audit found zero private absolute paths/network addresses,
   credential patterns, personal email addresses or private handoff identifiers.
@@ -50,7 +55,9 @@ it is not a substitute for reviewing every staged file.
 
 The [manifest](export-manifest.json) lists106curated files (excluding this report
 and the manifest itself), with sizes and SHA256. It contains no parent history
-reference or private source paths. Build outputs/test logs remain ignored.
+reference or private source paths. Build outputs/test logs remain ignored. The paired x86_64 crossbuild also passed
+and reproduced native SHA256
+`7357badb8048658605598cc1584c21b8da3372d3819ad0800e82af3ee67d885d`.
 
 ## Intentional portability adjustments
 
