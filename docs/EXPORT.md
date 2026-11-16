@@ -23,7 +23,7 @@ notes/history/roles/parameters/master. Legacy step-song files stay untouched.
 Build and full-suite instructions are in [DEVELOPMENT](DEVELOPMENT.md). The strict
 host build uses C11 and `-Wall -Wextra -Werror`. The portable device build accepts
 Zig from PATH/`ZIG` and uses the same strict flags with GNU2.35 x86_64 targeting.
-The paired V3 native SHA256 is
+The reviewed reference V3 native SHA256 is
 `0090bb56e5ca9be4dbc621328ea8b72072522a0e353f5e211b25c21218026fde`.
 A native ABI3 check precedes hardware/history startup.
 
@@ -59,3 +59,31 @@ The broad .gitignore protects routine local state/credentials, but is not a
 substitute for staged-file review. New source or artwork requires privacy/license
 review. Preserve original PNG provenance, MIT/Push Hack notices and independently
 obtained encoder licenses; no third-party DSP kernels are copied here.
+
+## Fresh archive validation
+
+A Git archive of public candidate `aa05a635a11ba85ad5441a1433790bd4d3e425b2`,
+extracted outside its original checkout, passed strict host build and all241tests
+in23.784seconds, including three payload-safety/completeness tests. Its V3
+production rehearsal passed26checks:1400film frames/6,174,000stereo PCM samples,
+64second sample-exact WAV, zero xruns. Decoded AAC has zero-sample lag at2/64/128s
+and correlation above.9988. These are offline build-host checks, not listening
+approval or a claim about every device.
+
+The standalone strict GNU2.35 x86_64 crossbuild passed with SHA256
+`754e8100987252da366de3520b5cd37f3d27f769fc8eec1e6724973d9309e8c1`.
+Its20allocated ELF sections are byte-identical to the reviewed reference binary;
+Zig's embedded debug source/build paths account for the whole-file hash
+difference. All18production source files and42core runtime source/art hashes
+match the reference. The binary is not included in this repository/archive.
+
+Local documentation link checks found25valid relative targets, zero missing.
+Text-marker checks found no private absolute paths, deployment commit IDs,
+personal handoff names or device addresses. An initial bare numeric marker
+matched packed image-cache hex data; those pre-existing matches were inspected
+as image bytes, not user-state metadata. Independent privacy/license review
+remains required before publication; these checks are not a security audit.
+
+Bundled-original V2 preparation followed by V3 preparation regenerated all42core
+runtime hashes with zero mismatches. Image metadata checks found no EXIF, comment,
+author or XMP fields in curated PNG/GIF media.

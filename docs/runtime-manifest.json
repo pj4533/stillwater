@@ -46,5 +46,7 @@
     "src/model.py": "ad02299f2593a4232610ab585bec35776de35d9c5e342cf348cd547fc73dc687",
     "src/recorder.py": "fe5d68914252cc75bc440be15fbfe37429bd37e3799234eb2ecb7899424a802d",
     "src/roles.py": "2092d93a8774ae7ca7bc30f27ef505fde629256d8063f54ab56e24b0913074bf"
-  }
+  },
+  "standalone_fresh_build_sha256": "754e8100987252da366de3520b5cd37f3d27f769fc8eec1e6724973d9309e8c1",
+  "binary_note": "Reference and fresh builds have identical20allocated ELF sections; debug source/build paths change whole-file hash."
 }

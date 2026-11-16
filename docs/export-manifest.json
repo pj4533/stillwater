@@ -279,8 +279,8 @@
     },
     {
       "path": "docs/EXPORT.md",
-      "bytes": 3632,
-      "sha256": "26ea8a2215e332db9ec271e569465ffb80a6a838be69aa35fc563966a8d5c986"
+      "bytes": 5305,
+      "sha256": "778ff0184ca7a6c93409f14cc48fb8af8129682dc5af56f2e97157b90292d9ab"
     },
     {
       "path": "docs/INSTALL.md",
@@ -369,8 +369,8 @@
     },
     {
       "path": "docs/runtime-manifest.json",
-      "bytes": 4167,
-      "sha256": "f5fcf6578a4f45bb5f1a12539a685c3ee65e8774d07123685d21e8a1bf9d6e25"
+      "bytes": 4406,
+      "sha256": "4cdcd48710f93417021695274812a3b14382335478e1990c6501e4e91338ed53"
     },
     {
       "path": "requirements-dev.txt",
