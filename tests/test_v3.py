@@ -57,10 +57,10 @@ class ModelV3(unittest.TestCase):
    for mode in MODES:
     self.m.rekey(root,mode,now=0)
     e=self.m.state.layers[0].events[0];self.assertEqual(e.degree,canonical);self.assertEqual(e.pitch,project_degree(canonical,root,mode))
-    pitches=[pad_pitch(n,0,root,mode) for n in range(36,100)];self.assertEqual(len(set(pitches)),29)
-    self.assertTrue(all(24<=p<=96 and (p-root)%12 in MODES[mode] for p in pitches))
+    pitches=[pad_pitch(n,0,root,mode) for n in range(36,100)];self.assertEqual(len(set(pitches)),64)
+    self.assertTrue(all(0<=p<=127 and (p-root)%12 in MODES[mode] for p in pitches))
     for d in (-22,-21,20,21):
-     pitch=project_degree(d,root,mode);self.assertTrue(24<=pitch<=96);self.assertIn((pitch-root)%12,MODES[mode])
+     pitch=project_degree(d,root,mode);self.assertTrue(0<=pitch<=127);self.assertIn((pitch-root)%12,MODES[mode])
   self.m.rekey(62,'dorian');self.assertEqual(self.m.state.layers[0].events[0].pitch,60)
  def test_progression_requires_recorded_foundation_then_mid_and_relocks_unused(self):
   self.assertEqual(self.m.role_state('filament'),'RECORD FOUNDATION');self.assertFalse(self.m.add_layer('prism'))
@@ -100,7 +100,7 @@ class NativeV3(unittest.TestCase):
   leds=led_values(self.m,self.e.stats(),self.i)
   for pad in range(36,100):
    self.assertIn(('note',pad),leds)
-   self.assertTrue(24<=pad_pitch(pad,self.m.octave,self.m.state.root,self.m.state.scale)<=96)
+   self.assertTrue(0<=pad_pitch(pad,self.m.octave,self.m.state.root,self.m.state.scale)<=127)
  def test_window_normalizes_after_cc_undo_structural_history_load_and_new(self):
   import queue
   from types import SimpleNamespace
@@ -242,9 +242,9 @@ class NativeV3(unittest.TestCase):
     self.assertEqual(render(self.m,stats,self.i),a)
     self.m.state=replace(self.m.state,layers=(layer,))
    self.m.view='instrument'
- def test_role_led_record_off_zero_and_native_size_render(self):
+ def test_role_led_record_off_lit_and_native_size_render(self):
   stats=self.e.stats();leds=led_values(self.m,stats,self.i);self.assertEqual(leds['cc',102],ROLE_PALETTE['silt'][0]);self.wire(86)
-  self.assertEqual(led_values(self.m,stats,self.i)['cc',86],0)
+  self.assertEqual(led_values(self.m,stats,self.i)['cc',86],7)
   for view in ('instrument','mixer','overview','key','chooser'):
    self.m.view=view;self.assertEqual(len(render(self.m,stats,self.i)),327680)
  def test_abi_rejected_before_hardware_or_history_use(self):

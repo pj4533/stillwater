@@ -69,11 +69,11 @@ class ModelV2(unittest.TestCase):
   self.assertEqual(len(self.m.redo_stack),64);self.m.set_master(.9)
   self.assertFalse(self.m.redo_stack)
  def test_pad_surface_whole_octaves_no_ceiling_clipping(self):
-  for octave in (-1,0):
+  for octave in (0,):
    pitches=[pad_pitch(n,octave) for n in range(36,100)]
-   self.assertTrue(all(24<=p<=96 and (p-62)%12 in (0,2,3,5,7,9,10) for p in pitches))
-   self.assertEqual(len(set(pitches)),29)
-  for octave in (-2,1):
+   self.assertTrue(all(0<=p<=127 and (p-62)%12 in (0,2,3,5,7,9,10) for p in pitches))
+   self.assertEqual(len(set(pitches)),64)
+  for octave in (-1,1):
    with self.assertRaises(ValueError):pad_pitch(36,octave)
  def test_legacy_full_files_unchanged_master_inherited(self):
   legacy=self.path.with_name('current.json');state=seeded();state['master']=.7

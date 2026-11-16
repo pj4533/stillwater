@@ -23,7 +23,7 @@ def main():
     for path in sorted(args.destination.rglob('*')):
         if path.is_file():
             data=path.read_bytes();entries[str(path.relative_to(args.destination))]={'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
-    result={'abi':5,'song_schema':3,'art_version':5,'files':entries}
+    result={'abi':6,'song_schema':3,'art_version':5,'files':entries}
     (args.destination/'payload-manifest.json').write_text(json.dumps(result,indent=2)+'\n')
     print(len(entries),'payload files; manifest written')
 if __name__=='__main__':main()

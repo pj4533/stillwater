@@ -32,6 +32,9 @@ alone does not enable auto-start: the deliberate switch step does.
 
 *Actual V5 display pixels from a scripted, isolated device test. Not a camera photograph.*
 
+All64 pads now play unique successive scale notes; actionable buttons stay lit,
+including New and inactive Record. [Control update and diagnostic](docs/CONTROL_FIXES.md).
+
 Stillwater turns the pad grid into a looping ambient instrument. Press Play and
 play a note to anchor a one-bar phrase. Add another layer, shape its material,
 and let the loop grow. Every pad stays a scale note, including while browsing

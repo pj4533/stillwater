@@ -17,6 +17,8 @@ dirty/durable revision and recording/capture/export status.
 | Operation | Fields / meaning |
 |---|---|
 | `status` | Current state and counters |
+| `input_diagnostic_start` | Optional `seconds` (default15, max30), `count` (default512, max2048); bounded parsed-event/revision trace in existing reader |
+| `input_diagnostic_status` | Read in-memory events/active flag; no music changes |
 | `event` | `kind`, `number`, `value`, optional `channel` default0; real wire dispatcher |
 | `set_master` | Finite `value`0–1 through ordered smoothed queue |
 | `export_loop` | Next complete loop, subject to capture/activity admission |
@@ -24,7 +26,7 @@ dirty/durable revision and recording/capture/export status.
 | `record_start`, `record_stop` | Start/finish screen+stereo film |
 | `record_status`, `record_recover` | Film status / interrupted-spool recovery |
 
-Read `LoopInstrument.operation` in src/loop_app.py and Bottle/SessionRecorder for
+Read `LoopInstrument.execute` in src/loop_app.py and Bottle/SessionRecorder for
 optional fields/validation. Old query_state/Grow/garden proposals and tone/decay
 operations are unsupported in V3. Explicit backpressure errors happen before
 mutation; retry deliberately. Query whether a non-idempotent operation completed

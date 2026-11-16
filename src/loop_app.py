@@ -27,6 +27,7 @@ class LoopInstrument(ManagementUI):
         self.bottle=bottle;self.recorder=recorder;self.export=export
         self.exit=False;self.return_stock=False;self.gear=None;self.gear_current=True;self.shift=False;self.help=False
         self.library=None;self.library_index=0;self.transition=None
+        self.diagnostic=None
         self.init_management(manager)
         model.view='instrument'
     def snapshot(self):
@@ -40,6 +41,16 @@ class LoopInstrument(ManagementUI):
     def invalidate_library(self):
         self.transition=None;self.model.cancel_replacement()
     def wire(self,event):
+        diagnostic=self.diagnostic
+        if diagnostic and len(diagnostic['events'])<diagnostic['count'] and time.monotonic()<diagnostic['deadline']:
+            before=self.model.revision
+            result=self._wire(event)
+            diagnostic['events'].append(dict(seconds=time.monotonic()-diagnostic['started'],event=dict(event),
+                transport=self.performance.transport,before_revision=before,after_revision=self.model.revision,
+                parameters=list(self.model.state.layers[self.model.selected].parameters)))
+            return result
+        return self._wire(event)
+    def _wire(self,event):
         self.performance.drain()
         if not self.engine.lib.sw_loop_ready():return False
         # View changes may pass a pending operation. All musical input waits
@@ -52,7 +63,7 @@ class LoopInstrument(ManagementUI):
         if self.shift:view_cc.add(86)
         if not self.shift:view_cc.add(92)
         if self.library is None and self.model.view!='chooser':view_cc.update(range(102,110))
-        musical=self.manager_mutation(event) or event['kind'] in ('note','note_off','pressure','poly_pressure') or (event['kind']=='cc' and event['number'] not in view_cc and event['value'])
+        musical=self.manager_mutation(event) or self.performance.actionable(event) or (event['kind']=='cc' and event['channel']==0 and event['number'] not in view_cc and event['value'])
         if musical and self.performance.structural:
             if event['kind']=='cc' and event['number']==119:
                 self.performance.cancel_structural();return True
@@ -63,7 +74,7 @@ class LoopInstrument(ManagementUI):
         if kind=='sysex':
             if len(number)>=10 and number[1:7]==[0,33,29,1,1,58] and number[7]&24:self.exit=True;self.return_stock=True
         elif kind in ('note','note_off','pressure','poly_pressure'):
-            if kind=='note' and value:
+            if kind=='note' and value and self.performance.actionable(event):
                 self.invalidate_library()
             self.performance.wire(event)
         elif kind=='cc' and event['channel']==0:
@@ -159,6 +170,15 @@ class LoopInstrument(ManagementUI):
         if op in ('record_start','record_stop','record_status','record_recover'):return self.recorder.execute(request)
         if op in ('request_capture','query_capture_status'):return self.bottle.execute(request)
         if op=='status':return self.snapshot()
+        if op=='input_diagnostic_start':
+            seconds=request.get('seconds',15);count=request.get('count',512)
+            if type(seconds) not in (int,float) or not 0<seconds<=30 or type(count) is not int or not 1<=count<=2048:raise ValueError('diagnostic bounds: seconds<=30, count<=2048')
+            now=time.monotonic();self.diagnostic=dict(started=now,deadline=now+seconds,count=count,events=[])
+            return dict(active=True)
+        if op=='input_diagnostic_status':
+            if not self.diagnostic:return dict(active=False,events=[])
+            d=self.diagnostic
+            return dict(active=time.monotonic()<d['deadline'] and len(d['events'])<d['count'],events=list(d['events']))
         if op=='manager_open':
             if set(request)!={'op','page'}:raise ValueError('Invalid manager fields')
             self.open_page(request['page']);return self.snapshot()
@@ -208,11 +228,14 @@ class LoopInstrument(ManagementUI):
 
 
 def led_values(model,stats,instrument):
-    desired={('cc',112):127 if model.view=='mixer' else 10,('cc',86):127 if model.overdub else 0,
+    desired={('cc',112):127 if model.view=='mixer' else 10,('cc',86):5 if model.overdub else 7,
              ('cc',81):127 if instrument.help else 10,('cc',85):126 if stats['loop']['transport'] else 4,
              ('cc',50):127 if model.view=='instrument' else 10,('cc',51):127 if model.view=='library' else 10,
-             ('cc',58):127 if model.view=='key' else 10,('cc',56):127 if model.state.loop_beats<32 else 0,
-             ('cc',113):127 if model.view=='overview' else 10,('cc',118):10}
+             ('cc',58):127 if model.view=='key' else 10,('cc',56):127 if model.state.loop_beats<32 else 10,
+             ('cc',113):127 if model.view=='overview' else 10,('cc',118):10,
+             ('cc',29):10,('cc',92):127 if instrument.shift or model.view=='chooser' else 10,
+             ('cc',110):127 if model.view=='instrument' else 10,('cc',49):127 if instrument.shift else 10,
+             ('cc',82):10,('cc',119):10,('cc',30):10,('cc',62):10,('cc',63):10}
     for i in range(8):
         if model.view=='chooser':
             role=ROLE_IDS[i];state=model.role_state(role);palette=ROLE_PALETTE[role]
@@ -231,7 +254,19 @@ def led_values(model,stats,instrument):
         pitch=pad_pitch(n,model.octave,model.state.root,model.state.scale)
         desired['note',n]=ROLE_PALETTE[active[pitch]][0] if pitch in active else palette[1] if pitch%12==model.state.root%12 else 123 if pitch%12 in (0,2,4,5,7,9,11) else palette[2]
     if model.view in ('library','recordings','key'):
-        for i in range(8):desired['cc',102+i]=10;desired['cc',20+i]=10
+        for i in range(8):desired['cc',102+i]=0;desired['cc',20+i]=0
+        desired['cc',109]=10
+        if model.view=='key':
+            for i in range(7):desired['cc',102+i]=127 if instrument.key_draft and instrument.key_draft[1]==tuple(MODES)[i] else 10
+            buttons=(26,27)
+        elif instrument.confirm or instrument.rename is not None:
+            buttons=(20,21,22,26,27) if instrument.rename is not None else (26,27)
+        elif model.view=='library':buttons=(20,21,22,23,24,25,27)
+        else:
+            desired['cc',104]=127 if instrument.record_tab=='current' else 10
+            desired['cc',105]=127 if instrument.record_tab=='saved' else 10
+            buttons=(20,21,22,23,24,25,27) if instrument.record_tab=='current' else (20,21,22,23,27)
+        for n in buttons:desired['cc',n]=10
     return desired
 
 

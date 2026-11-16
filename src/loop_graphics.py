@@ -92,7 +92,7 @@ def render(model,stats,instrument=None):
                 layer=model.state.layers[i]
                 for beat in range(model.state.loop_beats+1):c.rect(x+int(beat/model.state.loop_beats*108),84,1,29,(60,64,51) if beat%4 else BRASS)
                 for event in layer.events:
-                    xx=x+int(event.start_tick/(model.state.loop_beats*TICKS)*108);w=max(2,int(event.duration_tick/(model.state.loop_beats*TICKS)*108));y=108-int((event.pitch-24)/72*25)
+                    xx=x+int(event.start_tick/(model.state.loop_beats*TICKS)*108);w=max(2,int(event.duration_tick/(model.state.loop_beats*TICKS)*108));y=108-int(event.pitch/127*25)
                     c.rect(xx,y,min(w,x+110-xx),3,ROLE_RGB[layer.role] if not layer.muted else (55,58,52))
                 if playing==2:c.rect(x+int(loop.get('phase',0)/max(1,loop.get('loop_frames',1))*108),83,2,31,INK)
                 c.text(x,121,layer.role,ROLE_RGB[layer.role],2);c.text(x,141,str(len(layer.events))+' NOTES',BRASS,2)

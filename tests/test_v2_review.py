@@ -114,7 +114,7 @@ class NativeReview(unittest.TestCase):
   self.assertEqual(decode_song(json_ready(self.m.state)),self.m.state)
  def test_invalid_completion_never_mutates_valid_state_or_drops_reservation(self):
   eid=self.m.reserve(0,1,0);take=dict(id=eid,epoch=self.m.capture_epoch,layer=0,pitch=62,velocity=.5,start_tick=0,duration_tick=1)
-  for field,value in [('pitch',23),('velocity',float('nan')),('velocity',0),('id',True),('start_tick',LOOP_TICKS),('duration_tick',0),('status',2)]:
+  for field,value in [('pitch',-1),('pitch',128),('velocity',float('nan')),('velocity',0),('id',True),('start_tick',LOOP_TICKS),('duration_tick',0),('status',2)]:
    old=self.m.state;pending=dict(self.m.pending)
    with self.assertRaises(ValueError):self.m.accept_take(dict(take,**{field:value}))
    self.assertIs(self.m.state,old);self.assertEqual(self.m.pending,pending)

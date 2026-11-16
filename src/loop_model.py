@@ -96,8 +96,8 @@ def pitch_degree(pitch,root=62,scale='dorian'):
 
 def project_degree(degree,root,scale):
     pitch=degree_pitch(degree,root,scale)
-    while pitch<24:pitch+=12
-    while pitch>96:pitch-=12
+    while pitch<0:pitch+=12
+    while pitch>127:pitch-=12
     return pitch
 
 
@@ -143,7 +143,7 @@ def decode_song(raw):
             exact(event,'id pitch velocity start_tick duration_tick'+(' degree' if raw['schema']>=2 else ''))
             eid=integer(event['id'],1,ID_MAX)
             if eid in ids:raise ValueError('duplicate event id')
-            ids.add(eid);integer(event['pitch'],24,96)
+            ids.add(eid);integer(event['pitch'],*( (0,127) if raw['schema']==3 else (24,96)))
             if number(event['velocity'],0,1)==0:raise ValueError('zero velocity event')
             integer(event['start_tick'],0,ticks-1);integer(event['duration_tick'],1,ticks)
             degree=integer(event['degree'],-42,42) if raw['schema']>=2 else pitch_degree(event['pitch'],raw['root'],raw['scale'])
@@ -202,10 +202,13 @@ def legacy_master(path):
 
 def pad_pitch(pad,octave=0,root=62,scale='dorian'):
     integer(pad,36,99);integer(octave,-4,4)
-    degree=(pad-36)%8+(pad-36)//8*3-14+7*octave
-    low=degree_pitch(-14+7*octave,root,scale);high=degree_pitch(14+7*octave,root,scale)
-    if low<24 or high>96:raise ValueError('octave exceeds complete pad window')
-    return degree_pitch(degree,root,scale)
+    # One continuous diatonic keyboard: each row continues after eight notes.
+    # Root lies near the center. Reject the entire octave window at MIDI limits;
+    # never clamp individual notes into duplicate pitches.
+    start=-31+7*octave
+    low=degree_pitch(start,root,scale);high=degree_pitch(start+63,root,scale)
+    if low<0 or high>127:raise ValueError('octave exceeds complete pad window')
+    return degree_pitch(start+pad-36,root,scale)
 
 
 def atomic_write(path,payload,no_replace=False):
@@ -401,7 +404,7 @@ class LoopModel:
         eid=integer(take['id'],1,ID_MAX);status=integer(take.get('status',0),0,1)
         if not status:
             index=integer(take['layer'],0,len(self.state.layers)-1)
-            pitch=integer(take['pitch'],24,96);velocity=number(take['velocity'],0,1)
+            pitch=integer(take['pitch'],0,127);velocity=number(take['velocity'],0,1)
             if not velocity:raise ValueError('zero velocity event')
             start=integer(take['start_tick'],0,self.state.loop_beats*TICKS-1)
             duration=integer(take['duration_tick'],1,self.state.loop_beats*TICKS)

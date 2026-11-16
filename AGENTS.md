@@ -35,7 +35,7 @@ GIF. Text remains last/readable; no flashes, strobes or per-frame fsync. Pillow
 is offline only. Curated assets/*.bin, .poses and .working are packed image data; .build is disposable.
 V4 length changes require guarded native boundary acknowledgment before history
 commit. Preserve whole-window key normalization and onset-owned recording. Ship
-all V5 scenes/poses, material_controls.py and V4 working assets with matching ABI5 source/native.
+all V5 scenes/poses, material_controls.py and V4 working assets with matching ABI6 source/native.
 
 ## Hardware/deployment
 
@@ -66,5 +66,5 @@ system. Query first, serialize, honor backpressure, keep actions reversible/quie
 Commit verified work; publication and deployment are separate explicit actions.
 
 New layers use gentle sound version 2; existing music retains version 1.
-Song schema 3 requires paired ABI5 and is rejected by older builds. Preserve
+Song schema 3 requires paired ABI6 and is rejected by older builds. Preserve
 newer sessions before rollback; see [sound compatibility](docs/GENTLE_SOUND.md).

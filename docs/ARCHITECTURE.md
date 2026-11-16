@@ -57,7 +57,7 @@ replacement and uses a monotonic accepted-request token plus revision/pending
 checks. Playing/editing cancels replacement. Shutdown silences before bounded
 persistence/media finalization.
 
-Loop bank ABI5 is checked before history/ALSA setup. Length changes use a single
+Loop bank ABI6 is checked before history/ALSA setup. Length changes use a single
 guarded bank/token, validating epoch/activity and no held/unacknowledged takes or
 pending tempo at admission and the old native boundary. Bank/length apply
 atomically; model/history commits after acknowledgment. Ordered cancellation

@@ -1,7 +1,7 @@
 /* Original Stillwater V2 event-loop foundation. Included by engine.c so the
  * existing ALSA/history/limiter remain the single output owner. No RT allocation. */
 #define LP_TICKS ((uint64_t)(lp_song.loop_beats?lp_song.loop_beats:4)*96000)
-#define LP_ABI 5
+#define LP_ABI 6
 int sw_loop_abi(void){return LP_ABI;}
 #define LP_EVENTS 256
 #define LP_PLAYBACK 64
@@ -39,7 +39,7 @@ static int lp_enqueue(struct LoopCommand c){
 }
 /* All cross-thread cells are atomic; version guards coherence, never safety.
  * Publication is once per audio block, with no allocation or UI waiting. */
-#define LP_PITCHES 73
+#define LP_PITCHES 128
 struct PitchSnapshot { uint64_t epoch,reset; uint32_t enabled; uint64_t onset[8][LP_PITCHES]; uint32_t gate[8][LP_PITCHES]; };
 static uint64_t lp_pitch_onset[8][LP_PITCHES],lp_pitch_reset;
 static _Atomic uint64_t lp_pitch_epoch_out,lp_pitch_reset_out,lp_pitch_onset_out[8][LP_PITCHES];
@@ -48,8 +48,8 @@ static _Atomic unsigned lp_pitch_version;
 static void lp_publish_pitches(void){
  uint32_t gates[8][LP_PITCHES]={{0}},enabled=0;
  for(int l=0;l<lp_song.count;l++)if(!lp_song.layers[l].muted&&lp_song.layers[l].level>0)enabled|=1u<<l;
- for(int i=0;i<LP_PLAYBACK;i++){struct LoopVoice *v=&lp_voices[i];if(v->active&&v->held&&!v->retiring&&(enabled&(1u<<v->layer)))gates[v->layer][v->pitch-24]|=2;}
- for(int i=0;i<8;i++){struct LoopVoice *v=&lp_manual[i];if(v->active&&v->held&&!v->retiring&&(enabled&(1u<<v->layer)))gates[v->layer][v->pitch-24]|=1;}
+ for(int i=0;i<LP_PLAYBACK;i++){struct LoopVoice *v=&lp_voices[i];if(v->active&&v->held&&!v->retiring&&(enabled&(1u<<v->layer)))gates[v->layer][v->pitch]|=2;}
+ for(int i=0;i<8;i++){struct LoopVoice *v=&lp_manual[i];if(v->active&&v->held&&!v->retiring&&(enabled&(1u<<v->layer)))gates[v->layer][v->pitch]|=1;}
  atomic_fetch_add(&lp_pitch_version,1);
  atomic_store(&lp_pitch_epoch_out,lp_epoch);atomic_store(&lp_pitch_reset_out,lp_pitch_reset);atomic_store(&lp_pitch_enabled_out,enabled);
  for(int l=0;l<8;l++)for(int p=0;p<LP_PITCHES;p++){atomic_store(&lp_pitch_onset_out[l][p],lp_pitch_onset[l][p]);atomic_store(&lp_pitch_gate_out[l][p],gates[l][p]);}
@@ -94,7 +94,7 @@ int sw_loop_transport(int action,int overdub,uint64_t epoch){
  return lp_enqueue((struct LoopCommand){.op=1,.a=action,.b=overdub,.epoch=epoch});
 }
 int sw_performance_on(int slot,int token,int layer,int pitch,float velocity,int record,uint64_t epoch,uint64_t id){
- if(slot<0||slot>=8||token<=0||layer<0||layer>=8||pitch<24||pitch>96||!isfinite(velocity)||velocity<=0||velocity>1||(record!=0&&record!=1)||!epoch||!id||id>UINT64_C(9007199254740991))return -2;
+ if(slot<0||slot>=8||token<=0||layer<0||layer>=8||pitch<0||pitch>127||!isfinite(velocity)||velocity<=0||velocity>1||(record!=0&&record!=1)||!epoch||!id||id>UINT64_C(9007199254740991))return -2;
  int admitted=record;
  if(record){
   unsigned credits=atomic_load(&lp_credits);
@@ -135,7 +135,7 @@ static int lp_valid_bank(const struct SongBank *bank){
   for(int p=0;p<8;p++)if(!isfinite(layer->parameters[p])||layer->parameters[p]<0||layer->parameters[p]>1)return 0;
   for(int e=0;e<layer->count;e++){
    const struct LoopEvent *event=&layer->events[e];
-   if(!event->id||event->id>UINT64_C(9007199254740991)||event->start_tick>=(uint64_t)bank->loop_beats*96000||!event->duration_tick||event->duration_tick>(uint64_t)bank->loop_beats*96000||event->pitch<24||event->pitch>96||!isfinite(event->velocity)||event->velocity<=0||event->velocity>1)return 0;
+   if(!event->id||event->id>UINT64_C(9007199254740991)||event->start_tick>=(uint64_t)bank->loop_beats*96000||!event->duration_tick||event->duration_tick>(uint64_t)bank->loop_beats*96000||event->pitch<0||event->pitch>127||!isfinite(event->velocity)||event->velocity<=0||event->velocity>1)return 0;
    if(e&&(layer->events[e-1].start_tick>event->start_tick||(layer->events[e-1].start_tick==event->start_tick&&layer->events[e-1].id>=event->id)))return 0;
    for(int a=0;a<=l;a++)for(int b=0;b<(a==l?e:bank->layers[a].count);b++)if(bank->layers[a].events[b].id==event->id)return 0;
   }
@@ -349,7 +349,7 @@ static void lp_process(void){
     lp_holds[c.a]=(struct LoopHold){.token=c.b,.layer=c.c,.pitch=(int)c.generation,.capture=capture,.id=c.id,.epoch=c.epoch,.start=lp_clock,.start_tick=lp_to_tick(lp_phase),.velocity=c.value};
     lp_manual_tail[c.a]=lp_manual[c.a];lp_dsp[LP_PLAYBACK+8+c.a]=lp_dsp[LP_PLAYBACK+c.a];lp_manual_tail[c.a].held=0;
     lp_manual[c.a]=(struct LoopVoice){.active=1,.layer=c.c,.pitch=(int)c.generation,.held=1,.token=c.b,.velocity=c.value,.id=c.id};
-    if(!lp_song.layers[c.c].muted&&lp_song.layers[c.c].level>0)lp_pitch_onset[c.c][c.generation-24]++;
+    if(!lp_song.layers[c.c].muted&&lp_song.layers[c.c].level>0)lp_pitch_onset[c.c][c.generation]++;
     lp_voice_init(&lp_manual[c.a],LP_PLAYBACK+c.a);transport_target=1;stopping=0;lp_activity++;atomic_fetch_add(&onsets[c.c],1);
    }
   }
@@ -368,7 +368,7 @@ static void lp_process(void){
  }atomic_store_explicit(&lp_tail,t,memory_order_release);
 }
 static void lp_trigger(int layer,const struct LoopEvent *event){
- if(!lp_song.layers[layer].muted&&lp_song.layers[layer].level>0)lp_pitch_onset[layer][event->pitch-24]++;
+ if(!lp_song.layers[layer].muted&&lp_song.layers[layer].level>0)lp_pitch_onset[layer][event->pitch]++;
  int slot=0;
  for(int i=0;i<LP_PLAYBACK;i++){if(!lp_voices[i].active){slot=i;break;}if(lp_voices[i].age>lp_voices[slot].age)slot=i;}
  uint64_t duration=lp_to_frame(event->duration_tick);if(!duration)duration=1;

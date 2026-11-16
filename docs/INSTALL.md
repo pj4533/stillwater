@@ -54,7 +54,7 @@ python3 scripts/prepare-home.py .build/payload --engine .build/engine-device.so 
 
 This refuses an existing destination, copies only runtime files and the selected
 engine/tools, and never copies sessions, backups, recordings or machine configuration.
-Inspect its hashes before copying. Source/native must be paired at ABI5, and
+Inspect its hashes before copying. Source/native must be paired at ABI6, and
 runtime art must include all eight `assets/v5/*.bin`, eight `assets/v5/*.poses`
 and eight `assets/v4/*.working`, plus `src/material_controls.py`; see
 `docs/runtime-manifest.json` for46 core runtime
@@ -178,5 +178,5 @@ old build. Restore a private session backup only deliberately, after archiving t
 newer state. Do not factory-reset or update firmware as a troubleshooting shortcut.
 
 New layers use gentle sound version 2; existing music retains version 1.
-Song schema 3 requires paired ABI5 and is rejected by older builds. Preserve
+Song schema 3 requires paired ABI6 and is rejected by older builds. Preserve
 newer sessions before rollback; see [sound compatibility](GENTLE_SOUND.md).

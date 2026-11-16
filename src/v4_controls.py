@@ -17,7 +17,7 @@ class SlowChoice:
 
 class PitchLights:
     def __init__(self):
-        self.identity=None;self.seen=[[0]*73 for _ in range(8)];self.until={};self.rotation={};self.collisions={}
+        self.identity=None;self.seen=[[0]*128 for _ in range(8)];self.until={};self.rotation={};self.collisions={}
     def colors(self,model,stats,now=None):
         now=time.monotonic() if now is None else now;t=stats.get('pitches');self.collisions={}
         if not t or t['epoch']!=model.capture_epoch:
@@ -27,9 +27,9 @@ class PitchLights:
             self.identity=ident;self.until.clear();self.rotation.clear()
             # On a new epoch, gates describe current starts. Baseline counters
             # prevents old pre-replacement onsets reappearing in a new key.
-            self.seen=[[0]*73 for _ in range(8)]
+            self.seen=[[0]*128 for _ in range(8)]
         pitches={}
-        for p in range(73):
+        for p in range(128):
             fresh=[];roles=[]
             for l,layer in enumerate(model.state.layers):
                 enabled=bool(t['enabled']&(1<<l)) and not layer.muted and layer.level>0
@@ -41,7 +41,7 @@ class PitchLights:
             if not roles:
                 self.rotation.pop(p,None);continue
             if len(roles)>1:
-                self.collisions[str(p+24)]=roles
+                self.collisions[str(p)]=roles
                 if fresh:
                     # One complete round for short multi-role unisons.
                     for l in roles:self.until[l,p]=max(self.until.get((l,p),0),now+.2*len(roles))
@@ -64,7 +64,7 @@ class PitchLights:
                 self.rotation[p]=(base,deadline,interrupted)
             else:
                 owner=roles[0];self.rotation.pop(p,None)
-            pitches[p+24]=model.state.layers[owner].role
+            pitches[p]=model.state.layers[owner].role
         return pitches
 
 class ManagementUI:
@@ -116,7 +116,7 @@ class ManagementUI:
                 if not any(r['id']==self.selected_id for r in self.rows):self.selected_id=self.rows[0]['id'] if self.rows else None
             self.model.message='LIBRARY READY' if result['kind'] in ('loops','recordings') else 'NAME SAVED' if result['kind']=='rename' else 'DELETED / STORAGE RECLAIMED'
     def manager_mutation(self,event):
-        return event['kind']=='cc' and bool(event['value']) and ((self.model.view=='key' and event['number']==27 and self.key_draft is not None and tuple(self.key_draft)!=(self.model.state.root,self.model.state.scale)) or (self.model.view=='library' and self.confirm and self.confirm['action']=='load' and event['number']==27))
+        return event['kind']=='cc' and event['channel']==0 and bool(event['value']) and ((self.model.view=='key' and event['number']==27 and self.key_draft is not None and tuple(self.key_draft)!=(self.model.state.root,self.model.state.scale)) or (self.model.view=='library' and self.confirm and self.confirm['action']=='load' and event['number']==27))
     def management_event(self,number,value,delta):
         """Return True when page consumes a control; global controls pass through."""
         m=self.model;view=m.view

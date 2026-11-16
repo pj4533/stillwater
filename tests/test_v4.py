@@ -44,8 +44,8 @@ class NativeUI(unittest.TestCase):
   roles=('silt','oxide','choir','prism');pitches=(48,55,62,96);self.song(roles,pitches,1)
   self.i.pitch_lights.colors(self.m,self.e.stats(),0)
   self.i.performance.play();self.audio(1000);stats=self.e.stats()
-  self.assertTrue(all(stats['pitches']['onset'][l][p-24]==1 for l,p in enumerate(pitches)))
-  self.assertTrue(all(not stats['pitches']['gate'][l][p-24] for l,p in enumerate(pitches)))
+  self.assertTrue(all(stats['pitches']['onset'][l][p]==1 for l,p in enumerate(pitches)))
+  self.assertTrue(all(not stats['pitches']['gate'][l][p] for l,p in enumerate(pitches)))
   with patch('v4_controls.time.monotonic',return_value=.1):leds=led_values(self.m,stats,self.i)
   for pad in range(36,100):
    pitch=pad_pitch(pad,0,self.m.state.root,self.m.state.scale)
@@ -72,7 +72,7 @@ class NativeUI(unittest.TestCase):
   self.assertNotIn(62,lights.colors(self.m,stats,1.8))
  def test_pitch_snapshot_bounded_and_retired_stolen_gates(self):
   self.song(('silt',),(62,),300000);self.i.performance.play();self.audio(256)
-  out=PitchSnapshot();self.assertEqual(self.e.lib.sw_loop_pitches(C.byref(out)),0);self.assertEqual(out.gate[0][38],2)
+  out=PitchSnapshot();self.assertEqual(self.e.lib.sw_loop_pitches(C.byref(out)),0);self.assertEqual(out.gate[0][62],2)
   for n in range(70):self.e.lib.sw_performance_on(n%8,n+1,0,48+n%12,.5,0,1,n+10);self.audio(1)
   self.assertLessEqual(sum(bool(v&1) for v in self.e.pitches()['gate'][0]),8)
   self.i.performance.stop();self.audio();self.assertFalse(any(self.e.pitches()['gate'][0]))

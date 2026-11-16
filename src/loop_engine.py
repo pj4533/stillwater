@@ -30,7 +30,7 @@ class Snapshot(C.Structure):
 
 
 class PitchSnapshot(C.Structure):
-    _fields_=[('epoch',C.c_uint64),('reset',C.c_uint64),('enabled',C.c_uint32),('onset',(C.c_uint64*73)*8),('gate',(C.c_uint32*73)*8)]
+    _fields_=[('epoch',C.c_uint64),('reset',C.c_uint64),('enabled',C.c_uint32),('onset',(C.c_uint64*128)*8),('gate',(C.c_uint32*128)*8)]
 
 
 def bank_for(song):
@@ -49,7 +49,7 @@ class LoopEngine(Engine):
         # Check before Engine prepares history or opens ALSA, and before any
         # V3 structure pointer crosses the ABI boundary.
         lib=C.CDLL(str(path))
-        if not hasattr(lib,'sw_loop_abi') or lib.sw_loop_abi()!=5:raise RuntimeError('Stillwater native ABI mismatch / sound version2 requires paired ABI5 engine')
+        if not hasattr(lib,'sw_loop_abi') or lib.sw_loop_abi()!=6:raise RuntimeError('Stillwater native ABI mismatch / full pad range requires paired ABI6 engine')
         super().__init__(path,device)
         self.lib.sw_song_stage.argtypes=[C.POINTER(SongBank)]+[C.c_uint64]*5
         self.lib.sw_song_cancel.argtypes=[C.c_uint64]
@@ -193,6 +193,16 @@ class LoopPerformance:
         if self.model.add_layer(role):
             self.engine.publish(self.model.state,self.model.capture_epoch);return True
         return False
+    def pressure_slots(self,event):
+        return [(i,s) for i,s in enumerate(self.slots) if s and s['held'] and s['channel']==event['channel']
+                and (event['kind']!='poly_pressure' or s['pad']==event['number'])]
+    def actionable(self,event):
+        kind=event['kind']
+        if kind in ('pressure','poly_pressure'):
+            slots=self.pressure_slots(event)
+            return bool(slots) and (kind=='poly_pressure' or len(slots)==1)
+        if kind in ('note','note_off'):return 36<=event['number']<=99
+        return False
     def wire(self,event):
         self.drain();m=self.model;kind=event['kind'];channel=event['channel'];number=event['number'];value=event['value']
         if kind=='note' and value==0:kind='note_off'
@@ -216,7 +226,7 @@ class LoopPerformance:
             for i,s in enumerate(self.slots):
                 if s and s['held'] and (s['channel'],s['pad'])==(channel,number):self.engine.check(self.engine.lib.sw_performance_off(i,s['token']));s['held']=False
         elif kind in ('pressure','poly_pressure'):
-            slots=[(i,s) for i,s in enumerate(self.slots) if s and s['held'] and s['channel']==channel and (kind!='poly_pressure' or s['pad']==number)]
+            slots=self.pressure_slots(event)
             if kind=='poly_pressure' or len(slots)==1:
                 for i,s in slots:self.engine.check(self.engine.lib.sw_performance_pressure(i,s['token'],value/127))
         # CC/bend mapping belongs to the UI; channel0 CC74 is never slide.

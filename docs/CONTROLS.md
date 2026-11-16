@@ -5,7 +5,7 @@ KEY picker.** Clip opens LOOP, whose first two lower buttons also open LOOPS and
 RECORDINGS. Note/Device returns to the instrument. Managers take the screen
 buttons and encoders; pads, Play/Stop, Volume and Hold Settings still work.
 Physical Save always saves a new song snapshot. Musical Record still toggles
-note overdub. Musical recording and film recording are separate.
+note overdub. Musical recording and film recording are separate. All actionable global buttons stay lit, including New and Shift; Shift brightens New. See [continuous pads and input diagnosis](CONTROL_FIXES.md).
 
 Film starts **OFF**. Play and notes never start it. On RECORDINGS/CURRENT,
 lower20 START FILM begins screen+stereo capture; lower21 STOP+SAVE finishes and
@@ -53,7 +53,7 @@ See [V5 material worlds](V5_MATERIALS.md).
 
 ## Playing and sound design
 
-Press **Play**, then play a pad to anchor a fresh one-bar loop. **Record** lights
+Press **Play**, then play a pad to anchor a fresh one-bar loop. **Record** stays dim red while auditioning and bright red
 when notes will record; tap it to audition while playback continues, then tap it
 again to overdub. Stopped pads audition. The large header says REC, AUDITION or
 STOPPED REC ARMED. A held note keeps the recording intent it had at onset.
@@ -68,7 +68,7 @@ Existing V2 music keeps its original four-bar loop and exact performed notes.
   recorded foundation+middle unlock accents. Used/locked roles explain their
   state. Selecting an existing layer keeps its sound and notes.
 - **Scale** opens KEY: choose root/mode, then Apply or Cancel as described above.
-  Left/Right shifts the complete pad octave window. All 64 pads remain scale notes.
+  Left/Right shifts the complete pad octave window. All64 pads are unique successive scale notes, continuing row by row across MIDI0–127; octave counterparts are different pitches. An octave move is refused if the complete window cannot fit.
 - **Delete** clears just the selected layer's notes. Its sound, macros, level and
   mute remain. Undo restores the phrase. Late unfinished takes cannot return.
 - **Note / Device** shows eight source-material mechanisms and macro values;
