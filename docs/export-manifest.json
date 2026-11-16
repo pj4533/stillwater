@@ -30,8 +30,8 @@
       "sha256": "63182d4406b5faf83cbcb6941c52762b24e003bffa92e343cb1fc0d1db715ff1"
     },
     "README.md": {
-      "bytes": 9272,
-      "sha256": "3d034ce78d4a3225d82cf376c032aa5b15d0f73f1237e3d7c8b9a7ef8d6ac517"
+      "bytes": 9466,
+      "sha256": "6a342c4d95cd9cfdfbe67e3101856cefab0f0ab6c6f63719fb987a2835c89ddc"
     },
     "assets/README.md": {
       "bytes": 4667,
@@ -438,8 +438,8 @@
       "sha256": "cc46f790af1d5d551ae17b52b7d46a3a842b5d18bc4559714b2952adf60aecd4"
     },
     "docs/loop-browser/JOG_SENSITIVITY.md": {
-      "bytes": 2124,
-      "sha256": "b31397acf816ccaa9c19725c0eca192fc57aa8b2e51483270842aeb191339780"
+      "bytes": 3281,
+      "sha256": "63a4a0110aadf3b6f4a87e66bad33aca6da3785034a1a96efef2fc2dde806af6"
     },
     "docs/loop-browser/contact.png": {
       "bytes": 84711,
@@ -452,6 +452,14 @@
     "docs/loop-browser/device-contact.png": {
       "bytes": 65803,
       "sha256": "ecd5625591cc972d378f54dd3469c52f77de82f14c0fcd2957dcf992895ef25d"
+    },
+    "docs/loop-browser/jog-device-acceptance.json": {
+      "bytes": 5759,
+      "sha256": "44da818d795866b2f35d6ac41cfc069ad415245f6723e156112122b48b1d61cd"
+    },
+    "docs/loop-browser/jog-device-contact.png": {
+      "bytes": 65924,
+      "sha256": "5003e9135cec8f37cca9a7b034ab68646c52024fb4cd46714bb3433778225db8"
     },
     "docs/media/stillwater-banner.png": {
       "bytes": 2515592,

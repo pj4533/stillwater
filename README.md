@@ -1,3 +1,7 @@
+Jog sensitivity corrected: each right-wheel step immediately selects one item.
+111quiet device checks passed; music/history/media preserved.
+[Validation](docs/loop-browser/JOG_SENSITIVITY.md).
+
 Loop browser follow-up deployed: the large right navigation wheel browses LOOPS and saved
 RECORDINGS. LOADED names the saved source separately from the highlighted item,
 with durable EDITED/DELETED status. See [controls](docs/CONTROLS.md) and

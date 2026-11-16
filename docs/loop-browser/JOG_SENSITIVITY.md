@@ -26,7 +26,26 @@ Existing tests cover no automatic load, nonzero channels, rename/confirmation,
 current recordings, master and pending structural/replacement protection.
 
 Local focused tests:17passed; strict builds and full suites passed:
-311private tests in31.541s and316public tests in31.462s. No live installation
-yet at this checkpoint. Device acceptance now uses normal1/127 jog packets plus zero/extremes
+311private tests in31.541s and316public tests in31.462s. Reviewed source is now published and deployed. Device acceptance now uses normal1/127 jog packets plus zero/extremes
 through the sole production Midi.read; it still aborts on physical non-sysex
 input and uses an isolated master-zero home. Unchanged ABI6 native is retained.
+
+## Actual-device result
+
+111/111 quiet checks passed in35.009s, including immediate normal1/127 steps,
+repeats, reversals, zero and signed extremes through the sole production Midi.read.
+Both LOOPS and saved RECORDINGS respond to a single normal jog packet. Existing
+volume/no-load/rename/source/persistence/pad tests also pass.343display frames
+and1546586audio frames advanced, with zero xruns/rejections/output peak.
+
+All92installed hashes match; ABI6 native is unchanged.61normal-service samples
+over61.393s passed: clean stopped song, live owners, advancing audio/display,
+zero xruns/peak, maximum reported render8.690ms. New service-log suffix contains
+only starting/ready lines, no new errors/backoff/exits. All current music,
+sessions/history/recordings, master and transient controls were preserved.
+Rollback retains the reviewed source-capable reader and latest sessions.
+
+[Sanitized checks](jog-device-acceptance.json) ·
+[Actual synthetic fixture frames](jog-device-contact.png).
+No physical detent telemetry was observed; synthetic packets establish software
+response, not the player's physical feel. No sound/DSP/graphics changes were made.
