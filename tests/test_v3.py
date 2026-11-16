@@ -115,11 +115,11 @@ class NativeV3(unittest.TestCase):
   results=queue.Queue();self.m.writer=SimpleNamespace(results=results,submit=lambda *args:None)
   self.m.state=replace(self.m.state,root=60);self.m.octave=3
   self.m.replacement_request=(1,'load')
-  results.put(dict(kind='load',request_token=1,revision=self.m.revision,payload=dict(state=replace(self.m.state,root=71))))
+  results.put(dict(kind='load',name='song-'+'a'*32+'.json',label='TEST LOOP',request_token=1,revision=self.m.revision,current_state=self.m.state,payload=dict(state=replace(self.m.state,root=71))))
   self.m.poll_tasks();self.assert_pad_window();self.assertEqual(self.m.octave,2)
   self.m.state=replace(self.m.state,root=60);self.m.octave=3
   self.m.replacement_request=(2,'archive')
-  results.put(dict(kind='archive',request_token=2,revision=self.m.revision))
+  results.put(dict(kind='archive',request_token=2,revision=self.m.revision,current_state=self.m.state))
   self.m.poll_tasks();self.assert_pad_window();self.assertEqual(self.m.octave,3)
   self.m.writer=None
  def test_bad_pad_pitch_does_not_reserve_capture(self):

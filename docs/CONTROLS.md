@@ -20,8 +20,17 @@ as DELETE INCOMPLETE and is retried at startup. Saves are local on Push, with no
 implied download/upload. Paths are `/data/push-ambient/recordings/film-<id>.mp4`,
 `loop-<timestamp>-<id>.wav` and `bottle-<timestamp>-<id>.wav`.
 
-LOOPS shows four saved snapshots at a time. Encoder1 selects slowly, Left/Right
-pages, and selection never loads by itself. SAVE NEW writes another immutable
+LOOPS shows four saved snapshots at a time. Turn the large right navigation
+wheel to select slowly (CC70, four relative units per row); nudge it left/right
+(CC93/95) for one row. Left/Right arrow buttons page. Selection never loads
+by itself. The same wheel browses RECORDINGS/SAVED. Volume (CC79) stays master.
+The separate LOADED label names the saved source and its short file ID; the
+highlight is only the next action target. EDITED means the working music has
+changed since that snapshot, even after autosave; Undo conservatively keeps
+EDITED until an explicit load or SAVE NEW. DELETED means its saved source was
+removed while the working music remains. Older sessions with unknown provenance
+say CURRENT AUTOSAVE / UNNAMED. SAVE NEW makes the new snapshot the source;
+loading uses the chosen file, rename follows its name, and New clears the source. SAVE NEW writes another immutable
 snapshot. LOAD asks first, archives current music and stops playback. RENAME
 changes only a display-name sidecar: encoder1 moves the cursor, encoder2 chooses
 a visible character, INSERT/SPACE/BACKSPACE edit, SAVE NAME commits, CANCEL

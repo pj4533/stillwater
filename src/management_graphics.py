@@ -46,6 +46,10 @@ def manager_page(c,m,i,record):
     if view=='recordings':
         c.text(245,48,'CURRENT',BRASS if i.record_tab=='current' else INK,2)
         c.text(370,48,'SAVED',BRASS if i.record_tab=='saved' else INK,2)
+    if view=='library':
+        source=m.source_status()
+        label=('LOADED '+source['name']+' / ID '+source['id'][-13:-5]+(' / DELETED' if source['deleted'] else '')+(' / EDITED' if source['modified'] else '')) if source else 'CURRENT AUTOSAVE / UNNAMED'
+        c.text(245,49,label,BRASS)
     if i.manager_busy:c.text(740,49,'WORKING',BRASS,2)
     if i.rename is not None:
         c.text(6,70,i.rename or 'EMPTY NAME',INK,2)
@@ -86,5 +90,5 @@ def manager_page(c,m,i,record):
         text=str(row.get('layers',''))+' LAYERS' if view=='library' else row.get('type','')+' / RAW '+str(row.get('raw_bytes',0))+' BYTES'
         c.text(568,104,text,BRASS)
         if i.details:lines(c,568,115,str((i.manager.saved if view=='library' else i.manager.recordings)/row['name' if view=='recordings' else 'id']),61)
-        else:c.text(568,120,'ENC 1 SELECT / LEFT RIGHT PAGE',INK)
+        else:c.text(568,120,'RIGHT WHEEL SELECT / ARROWS PAGE',INK)
     actions(c,['SAVE NEW','LOAD','RENAME','DELETE','REFRESH','DETAILS','','BACK'] if view=='library' else ['REFRESH','DETAILS','RECOVER','DELETE','','','','BACK'])

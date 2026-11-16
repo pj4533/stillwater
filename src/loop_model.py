@@ -153,8 +153,19 @@ def decode_song(raw):
     return Song(3,raw['song_id'],raw['tempo'],raw['master'],raw['root'],raw['scale'],raw['loop_beats'],tuple(order),tuple(layers))
 
 
-def envelope(revision,state,undo,redo):
-    return dict(format='stillwater-loop',version=2,revision=revision,state=state,undo=undo,redo=redo)
+def envelope(revision,state,undo,redo,source=None):
+    result=dict(format='stillwater-loop',version=2,revision=revision,state=state,undo=undo,redo=redo)
+    if source is not None:result['source']=dict(source)
+    return result
+
+
+def decode_source(source):
+    if source is None:return None
+    exact(source,'id name modified deleted')
+    if not isinstance(source['id'],str) or not re.fullmatch(r'song-[0-9a-f]{32}\.json',source['id']):raise ValueError('invalid source id')
+    if not isinstance(source['name'],str) or not 1<=len(source['name'])<=24 or any(not 32<=ord(c)<=126 for c in source['name']):raise ValueError('invalid source name')
+    if type(source['modified']) is not bool or type(source['deleted']) is not bool:raise ValueError('invalid source status')
+    return dict(source)
 
 
 def json_ready(value):
@@ -170,11 +181,11 @@ def read_envelope(path):
         raw=f.read(MAX_FILE+1)
     if len(raw)>MAX_FILE:raise ValueError('session too large')
     obj=json.loads(raw)
-    exact(obj,'format version revision state undo redo')
+    exact(obj,'format version revision state undo redo'+(' source' if 'source' in obj else ''))
     if obj['format']!='stillwater-loop' or type(obj['version']) is not int or obj['version'] not in (1,2):raise ValueError('unsupported loop envelope')
     revision=integer(obj['revision'],0,ID_MAX)
     if not isinstance(obj['undo'],list) or not isinstance(obj['redo'],list) or len(obj['undo'])+len(obj['redo'])>MAX_HISTORY:raise ValueError('invalid history')
-    return envelope(revision,decode_song(obj['state']),tuple(decode_song(s) for s in obj['undo']),tuple(decode_song(s) for s in obj['redo']))
+    return envelope(revision,decode_song(obj['state']),tuple(decode_song(s) for s in obj['undo']),tuple(decode_song(s) for s in obj['redo']),decode_source(obj.get('source')))
 
 
 def legacy_master(path):
@@ -251,15 +262,17 @@ class SessionWriter:
     def _job(self,kind,payload,name):
         directory=self.path.parent/'saved'
         if kind in ('snapshot','archive'):
-            name='song-'+uuid.uuid4().hex+'.json';atomic_write(directory/name,payload['current'] if kind=='archive' else payload,True)
-            return dict(kind=kind,name=name,revision=payload['revision'],request_token=payload.get('request_token'))
+            current=payload.get('current',payload)
+            name='song-'+uuid.uuid4().hex+'.json';atomic_write(directory/name,current,True)
+            from library_manager import loop_name
+            return dict(kind=kind,name=name,label=loop_name(directory/name),song_id=current['state'].song_id,saved_state=current['state'],current_state=current['state'],revision=payload['revision'],request_token=payload.get('request_token'))
         if kind=='load':
-            from library_manager import identity
+            from library_manager import identity,loop_name
             actual=identity(directory/name)
             if payload.get('file_identity') is not None and actual!=payload['file_identity']:raise ValueError('Saved loop changed; refresh')
             loaded=read_envelope(directory/name)
             archived='song-'+uuid.uuid4().hex+'.json';atomic_write(directory/archived,payload['current'],True)
-            return dict(kind=kind,name=name,revision=payload['revision'],request_token=payload['request_token'],payload=loaded,archived=archived)
+            return dict(kind=kind,name=name,revision=payload['revision'],request_token=payload['request_token'],payload=loaded,current_state=payload['current']['state'],archived=archived,label=loop_name(directory/name))
         names=[]
         if directory.exists():
             with os.scandir(directory) as entries:
@@ -314,10 +327,10 @@ class LoopModel:
         self.path=Path(path);v2=self.path.with_name('current-v2.json')
         bootstrap=read_envelope(v2) if self.path.name=='current-v3.json' and not self.path.exists() and v2.exists() else None
         self.state=blank(legacy_master(legacy) if legacy and not self.path.exists() and bootstrap is None else .28,seed)
-        self.revision=0;self.undo_stack=();self.redo_stack=()
+        self.revision=0;self.undo_stack=();self.redo_stack=();self.source=None
         if self.path.exists() or bootstrap is not None:
             env=read_envelope(self.path) if self.path.exists() else bootstrap
-            self.state=env['state'];self.revision=env['revision'];self.undo_stack=env['undo'];self.redo_stack=env['redo']
+            self.state=env['state'];self.revision=env['revision'];self.undo_stack=env['undo'];self.redo_stack=env['redo'];self.source=env.get('source')
         self.selected=0;self.octave=0;self.capture_epoch=1;self.pending={};self.overdub=True
         self.next_id=1+max((e.id for s in (self.state,)+self.undo_stack+self.redo_stack for l in s.layers for e in l.events),default=0)
         self.gesture=None;self.message='PLAY THEN PLAY A NOTE';self.new_revision=None;self.loading_revision=None
@@ -326,7 +339,22 @@ class LoopModel:
         if self.writer:
             if self.path.exists():self.writer.durable_revision=self.revision
             else:self.checkpoint()
-    def payload(self):return envelope(self.revision,self.state,self.undo_stack,self.redo_stack)
+        if self.source:
+            from library_manager import loop_name
+            try:source=dict(self.source,name=loop_name(self.path.parent/'saved'/self.source['id']),deleted=False)
+            except (OSError,ValueError,KeyError):source=dict(self.source,deleted=True)
+            self.source_changed(source)
+    def payload(self):return envelope(self.revision,self.state,self.undo_stack,self.redo_stack,self.source)
+    def source_changed(self,source):
+        if source==self.source:return
+        self.source=source;self.revision+=1;self.checkpoint(True)
+    def source_status(self):
+        return dict(self.source) if self.source else None
+    def mark_source_edited(self):
+        if self.source:self.source=dict(self.source,modified=True)
+    def reconcile_source(self,kind,row,label=None):
+        if not self.source or self.source['id']!=row['id']:return
+        self.source_changed(dict(self.source,**({'name':label} if kind=='rename' else {'deleted':True})))
     def checkpoint(self,force=False):
         if self.writer:self.writer.submit(self.payload(),force)
     @property
@@ -343,7 +371,7 @@ class LoopModel:
         now=time.monotonic() if now is None else now
         grouped=gesture is not None and self.gesture is not None and self.gesture[0]==gesture and now-self.gesture[1]<=.25
         if not grouped:self.undo_stack=(self.undo_stack+(self.state,))[-MAX_HISTORY:]
-        self.redo_stack=();self.state=state;self.normalize_octave();self.revision+=1
+        self.mark_source_edited();self.redo_stack=();self.state=state;self.normalize_octave();self.revision+=1
         self.gesture=(gesture,now) if gesture is not None else None;self.checkpoint();return True
     def layer_edit(self,index,**changes):
         integer(index,0,len(self.state.layers)-1)
@@ -431,12 +459,13 @@ class LoopModel:
         if self.pending:self.cancel_pending()
         self.undo_stack=(self.undo_stack+(self.state,))[-MAX_HISTORY:]
         self.state=self.redo_stack[-1];self.redo_stack=self.redo_stack[:-1];self._history_changed();return True
-    def _history_changed(self):
+    def _history_changed(self,edited=True):
+        if edited:self.mark_source_edited()
         self.normalize_octave()
         self.capture_epoch+=1;self.gesture=None;self.revision+=1;self.selected=min(self.selected,len(self.state.layers)-1);self.checkpoint()
     def request_save(self):
         if not self.writer:raise RuntimeError('persistence unavailable')
-        self.checkpoint(True);self.writer.task('snapshot',self.payload());self.message='SAVING SONG'
+        self.checkpoint(True);self.writer.task('snapshot',dict(revision=self.revision,current=self.payload(),request_token=self.replacement_serial));self.message='SAVING SONG'
     def request_library(self):
         if not self.writer:raise RuntimeError('persistence unavailable')
         self.writer.task('list')
@@ -469,16 +498,20 @@ class LoopModel:
                 # accepted load/New even when both began at the same revision.
                 self.cancel_replacement()
                 if result.get('error'):self.message=result['error'];result['applied']=False;continue
-                if self.pending or result['revision']!=self.revision:
+                if self.pending or result['current_state'] is not self.state:
                     result['applied']=False;self.message='SONG CHANGED / '+('LOAD' if kind=='load' else 'NEW')+' CANCELLED';continue
                 if kind=='load':
                     self.state=result['payload']['state'];self.undo_stack=self.redo_stack=()
-                    self.selected=0;self.overdub=True;self._history_changed()
+                    self.source=dict(id=result['name'],name=result['label'],modified=False,deleted=False)
+                    self.selected=0;self.overdub=True;self._history_changed(False)
                     self.next_id=max(self.next_id,1+max((e.id for l in self.state.layers for e in l.events),default=0))
                     self.message='SONG LOADED / STOPPED'
                 else:
-                    self.commit(blank(self.state.master));self.selected=0;self.overdub=True;self.capture_epoch+=1
+                    self.source=None;self.commit(blank(self.state.master));self.selected=0;self.overdub=True;self.capture_epoch+=1
                 result['applied']=True
             elif result.get('error'):self.message=result['error']
-            elif kind=='snapshot':self.message='SONG SNAPSHOT SAVED'
+            elif kind=='snapshot':
+                if result.get('request_token')==self.replacement_serial and result.get('song_id')==self.state.song_id:
+                    self.source_changed(dict(id=result['name'],name=result['label'],modified=result['saved_state']!=self.state,deleted=False))
+                self.message='SONG SNAPSHOT SAVED'
     def close(self,timeout=2):return self.writer.close(timeout) if self.writer else True

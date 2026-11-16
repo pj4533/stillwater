@@ -73,13 +73,14 @@ class ManagementUI:
         self.manager=manager;self.page_generation=0;self.rows=[];self.selected_id=None;self.manager_busy=False
         self.confirm=None;self.details=False;self.record_tab='current';self.return_view='instrument'
         self.key_draft=None;self.slow=[SlowChoice() for _ in range(8)];self.rename=None;self.rename_cursor=0;self.character=1
-        self.pitch_lights=PitchLights()
+        self.pitch_lights=PitchLights();self.browse_slow=SlowChoice()
     def open_page(self,page):
         if page not in ('library','recordings','key','instrument','mixer','overview','chooser'):raise ValueError('Invalid page')
         if self.model.view=='library':self.invalidate_library()
         if self.model.view not in ('library','recordings','key'):self.return_view=self.model.view
         self.page_generation+=1;self.manager_busy=False;self.confirm=None;self.details=False;self.rename=None
         for slow in self.slow:slow.reset()
+        self.browse_slow.reset()
         self.key_draft=[self.model.state.root,self.model.state.scale] if page=='key' else None
         self.model.view=page;self.library=None
         if page in ('library','recordings'):
@@ -108,6 +109,8 @@ class ManagementUI:
         while True:
             try:result=self.manager.results.get_nowait()
             except queue.Empty:break
+            if not result.get('error') and result.get('changed_id'):
+                self.model.reconcile_source(result['kind'],dict(id=result['changed_id']),result.get('label'))
             if result['generation']!=self.page_generation or self.model.view not in ('library','recordings'):continue
             self.manager_busy=False
             if result.get('error'):self.model.message=result['error'];continue
@@ -137,12 +140,17 @@ class ManagementUI:
             if 20<=number<=27:return True
             return False
         if view not in ('library','recordings'):return False
+        if number in (70,93,94,95,11):
+            if self.rename is None and not self.confirm and (view=='library' or self.record_tab=='saved'):
+                if number==70 and delta:self.select_row(self.browse_slow.step(delta))
+                elif number in (93,95) and value:self.select_row(-1 if number==93 else 1)
+            return True
         if number in range(71,79):
             index=number-71;step=self.slow[index].step(delta)
             if self.rename is not None:
                 if index==0:self.rename_cursor=max(0,min(len(self.rename),self.rename_cursor+step))
                 elif index==1:self.character=max(0,min(len(ALPHABET)-1,self.character+step))
-            elif index==0 and not self.confirm:self.select_row(step)
+            # Screen encoders are reserved for the two-field rename draft.
             return True
         owned=number in range(20,28) or number in range(102,110) or number in (62,63,118)
         if not owned:return False
@@ -214,6 +222,6 @@ class ManagementUI:
         if not row:raise ValueError('Select a saved item')
         self.confirm=dict(action='delete',row=dict(row))
     def manager_status(self):
-        return dict(generation=self.page_generation,busy=self.manager_busy,selected_id=self.selected_id,rows=self.rows,
+        return dict(loaded_source=self.model.source_status(),generation=self.page_generation,busy=self.manager_busy,selected_id=self.selected_id,rows=self.rows,
                     confirm=self.confirm,rename=self.rename,record_tab=self.record_tab,key_draft=self.key_draft,
                     collisions=self.pitch_lights.collisions)

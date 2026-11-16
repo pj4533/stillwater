@@ -1,3 +1,8 @@
+Loop browser follow-up: the large right navigation wheel browses LOOPS and saved
+RECORDINGS. LOADED names the saved source separately from the highlighted item,
+with durable EDITED/DELETED status. See [controls](docs/CONTROLS.md) and
+[validation](docs/LOOP_BROWSER_VALIDATION.md). Native ABI6 and sounds unchanged.
+
 <div align="center">
 
 ![Stillwater — ambient water and light wordmark](docs/media/stillwater-banner.png)

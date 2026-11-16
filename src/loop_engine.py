@@ -121,7 +121,8 @@ class LoopPerformance:
         if s['ack_token']!=op['token']:return
         if s['op_status']==1:
             m=self.model
-            if m.revision!=op['revision']:raise RuntimeError('structural revision changed before native acknowledgment')
+            # File provenance checkpoints advance durability without changing music.
+            if m.state is not op['before']:raise RuntimeError('structural song changed before native acknowledgment')
             if op['kind']=='undo':
                 m.redo_stack=(m.redo_stack+(m.state,))[-64:];m.state=op['state'];m.undo_stack=m.undo_stack[:-1];m._history_changed()
             elif op['kind']=='redo':
@@ -146,7 +147,7 @@ class LoopPerformance:
         state=state() if callable(state) else state
         self.op_serial+=1;epoch=m.capture_epoch+1
         self.engine.stage(state,epoch,self.op_serial,s)
-        self.structural=dict(state=state,kind=kind,token=self.op_serial,epoch=epoch,revision=m.revision,cancelling=False)
+        self.structural=dict(state=state,kind=kind,token=self.op_serial,epoch=epoch,revision=m.revision,before=m.state,cancelling=False)
         m.message='ADD BAR / REPEAT FIRST BAR / NEXT LOOP' if kind=='extend' else 'LENGTH CHANGE / NEXT LOOP'
         return True
     def extend(self):return self.stage(self.model.extended)

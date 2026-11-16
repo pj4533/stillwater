@@ -90,7 +90,7 @@ Tested display VID/PID`2982:1969`, usbfs bulk endpoint1,16-byte header beginning
 MIT Push Hack adaptation. MIDI discovery uses named `Live Port`, not a guessed
 port number. Audio is `hw:A3,0` on the tested device; verify compatibility first.
 
-CC map: screen encoders71–78, Volume79, Tempo14; select102–109, mute20–27;
+CC map: screen encoders71–78, Volume79, Tempo14; right navigation wheel70, nudges93/95; select102–109, mute20–27;
 Play85, Stop Clips29, New92, Note50, Session51, Mix112, Device110, Shift49,
 Save82, Undo119, Record86, Scale58, Repeat56, Delete118, Clip113, Help81,
 Settings30, arrows62/63. Pads36–99.

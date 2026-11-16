@@ -140,7 +140,7 @@ def render(model,stats,instrument=None):
         # mode and all eight current macro values remain visible.
         c.rect(0,31,960,82,(8,13,12))
         context=('SCREEN BUTTONS: MANAGER ACTIONS / PADS STILL PLAY' if view in ('library','recordings') else 'TOP: CHOOSE MODE / ENC 1 ROOT / ENC 2 MODE' if view=='key' else 'NEW: CHOOSE ROLE / TOP: SELECT / LOWER: MUTE / MIX: LEVELS')
-        action=('START FILM / STOP+SAVE / SAVED: DETAILS RECOVER DELETE' if view=='recordings' else 'ENC 1 SELECT / LOAD RENAME DELETE / CONFIRM OR CANCEL' if view=='library' else 'LOWER 26 CANCEL / LOWER 27 APPLY / PADS KEEP ACTIVE KEY' if view=='key' else 'RECORD: NOTES ON/OFF / UNDO / SHIFT UNDO: REDO')
+        action=('SAVED: RIGHT WHEEL SELECT / DETAILS RECOVER DELETE' if view=='recordings' else 'RIGHT WHEEL SELECT / LOAD RENAME DELETE / CONFIRM' if view=='library' else 'LOWER 26 CANCEL / LOWER 27 APPLY / PADS KEEP ACTIVE KEY' if view=='key' else 'RECORD: NOTES ON/OFF / UNDO / SHIFT UNDO: REDO')
         for y,text in ((34,'PLAY/STOP: MUSIC / PADS: SONG KEY / VOLUME: MASTER'),(52,context),(70,action),(88,'SAVE: NEW SONG SNAPSHOT / HOLD SETTINGS: STOCK RETURN')):c.text(8,y,text,INK,2)
     if view=='instrument' and not (instrument and instrument.help):
         c.rect(0,32,960,13,(7,14,13));c.text(5,34,message[:76],INK)

@@ -1,3 +1,37 @@
+# Loop browser and saved-source identity — candidate
+
+LOOPS and RECORDINGS/SAVED use the large right navigation wheel: CC70 scroll,
+CC93/95 one-row nudges. Scroll retains four-unit accumulation, idle/reversal
+reset, one-row maximum per packet and endpoint clamping. Encoder1 no longer
+browses; encoders1/2 still edit the rename cursor/character and KEY root/mode.
+Wheel press94 and touch11 are consumed without loading, deleting or editing.
+Confirmation and rename drafts pin the original target; wheel movement cannot
+change them. Volume79 remains master; screen encoder8 remains78. Browsing,
+touch and wheel press cannot cancel pending musical operations.
+
+Mapping evidence: the complete [pinned Push3 encoder mapping](https://github.com/danielknng/push3-protocol-docs/blob/0d843cd69a7a0d2c52eddb46a57ea69fd0ddc2e5/docs/encoders.md)
+was read, especially “Jog Wheel (Navigation Control)” and “Master Volume Knob”.
+This is protocol/source evidence, not a claim of physical encoder acceptance.
+
+LOOPS displays LOADED name + short saved-file ID separately from the selected
+row. The current-v3 envelope accepts an optional validated `source` object:
+controlled filename `id`, display `name`, Boolean `modified` and `deleted`.
+Song schema3 and native ABI6 are unchanged. Old envelopes remain readable and
+unnamed; no content matching guesses which snapshot they came from. The worker
+returns the actual filename on successful load/save. Snapshot results are pinned
+to the song and replacement generation so a late save cannot replace a newer
+load/New identity. Metadata checkpoints increment durability revision without
+adding musical Undo entries. Source names/deletions reconcile even after leaving
+the manager, and startup checks the source sidecar/existence.
+
+Any musical state edit, including master and Undo/Redo, conservatively marks the
+source EDITED; autosave does not claim an exact saved-library match. Loading or
+saving a new snapshot clears EDITED only for the state actually loaded/saved.
+New clears provenance; Undo after New remains unnamed. Rename retains the file
+identity. Deleting a source leaves its name/ID with DELETED, retaining current
+music/history. Older code with strict envelope keys cannot read source-bearing
+sessions: preserve current sessions and use this reader when rolling back UI.
+
 # Overlapping scale pads and visible controls
 
 This V5 follow-up uses paired native ABI6 with song schema3. Install source and

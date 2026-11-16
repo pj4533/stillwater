@@ -56,7 +56,7 @@ class LoopInstrument(ManagementUI):
         # View changes may pass a pending operation. All musical input waits
         # for ordered cancel acknowledgment; an apply that won is committed by
         # drain first. MidiDispatch retains the original event in order.
-        view_cc={49,30,112,110,50,51,58,81,113,82}
+        view_cc={49,30,112,110,50,51,58,81,113,82,70,93,94,95,11}
         if self.model.view=='overview':view_cc.update((20,21,27))
         if self.model.view in ('library','recordings','key'):
             view_cc.update(range(20,28));view_cc.update(range(71,79));view_cc.update(range(102,110));view_cc.update((62,63,118))

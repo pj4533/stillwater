@@ -37,6 +37,14 @@ def load_json(path,limit=65536):
 def identity(path,directory=False):
     s=safe(path,directory);return [s.st_dev,s.st_ino,s.st_size,s.st_mtime_ns]
 
+def loop_name(path):
+    path=Path(path);info=safe(path)
+    label='LOOP '+time.strftime('%y-%m-%d %H:%M',time.localtime(info.st_mtime))+' '+path.stem[-4:]
+    meta=path.with_suffix('.name.json')
+    if meta.exists():label=load_json(meta)['name']
+    if not isinstance(label,str) or not 1<=len(label)<=24 or any(c not in ALPHABET for c in label.upper()):raise ValueError('Invalid name')
+    return label
+
 def sync(directory):
     fd=os.open(directory,os.O_RDONLY)
     try:os.fsync(fd)
@@ -111,7 +119,7 @@ class LibraryManager:
                 atomic_write(meta,dict(name=label.strip()))
             else:
                 path.unlink();meta.unlink(missing_ok=True);sync(self.saved)
-            return dict(rows=self.loops())
+            return dict(rows=self.loops(),changed_id=name,label=label.strip() if kind=='rename' else None)
         if kind=='delete_recording':
             row=data['row'];self.delete_recording(row);return dict(rows=self.inventory())
         raise ValueError('Unknown library task')
@@ -123,9 +131,7 @@ class LibraryManager:
             info=safe(path);label='LOOP '+time.strftime('%y-%m-%d %H:%M',time.localtime(info.st_mtime))+' '+path.stem[-4:]
             row=dict(id=path.name,name=label,identity=identity(path),created=info.st_mtime,bytes=info.st_size,status='READY')
             try:
-                meta=path.with_suffix('.name.json')
-                if meta.exists():safe(meta);label=load_json(meta)['name']
-                if not isinstance(label,str) or len(label)>24 or any(c not in ALPHABET for c in label.upper()):raise ValueError('Invalid name')
+                label=loop_name(path)
                 song=read_envelope(path)['state']
                 row.update(name=label,key=PITCH_NAMES[song.root%12]+' '+song.scale.upper(),tempo=song.tempo,bars=song.loop_beats//4,layers=len(song.layers))
             except Exception as exc:row.update(status='ERROR',error=str(exc)[:80])

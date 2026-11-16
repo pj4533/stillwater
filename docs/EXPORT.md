@@ -2,7 +2,7 @@
 
 This repository contains the complete distributable instrument, with its public
 history, original branding and MIT/Push Hack notices. No private parent history
-is imported. V5 replaces only instrument renderer/artwork; native ABI5, song
+is imported. V5 replaces only instrument renderer/artwork; native ABI6, song
 schema3 and versioned gentle sound remain unchanged.
 
 Included: production Python/C, original material-control geometry, eight V5
@@ -48,7 +48,7 @@ retain portable toolchain selection, bundled inputs and `.build/` outputs; priva
 editorial/device-smoke tools are omitted. Public staging uses this standalone
 checkout rather than a private prior deployment manifest. The renderer preloads
 one pose bank, never duplicate V4/V5 banks. The native engine is unchanged; public
-cross-build allocated ELF sections match the deployed ABI5 reference. Its whole
+cross-build allocated ELF sections match the deployed ABI6 reference. Its whole
 file hash can differ with build paths. No compiled engine is committed.
 
 The [export manifest](export-manifest.json) records sizes/hashes for the entire
