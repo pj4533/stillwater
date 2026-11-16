@@ -55,11 +55,21 @@ python3 scripts/prepare-home.py .build/payload --engine .build/engine-device.so 
 This refuses an existing destination, copies only runtime files and the selected
 engine/tools, and never copies sessions, backups, recordings or machine configuration.
 Inspect its hashes before copying. Source/native must be paired at ABI5, and
-runtime art must include all eight `assets/v2/*.bin`, eight `assets/v4/*.poses`
-and eight `assets/v4/*.working`; see `docs/runtime-manifest.json` for45 core runtime
+runtime art must include all eight `assets/v5/*.bin`, eight `assets/v5/*.poses`
+and eight `assets/v4/*.working`, plus `src/material_controls.py`; see
+`docs/runtime-manifest.json` for46 core runtime
 hashes. The payload helper also includes ownership/recovery scripts and legacy
 renderer dependencies; optional encoder tools must include their own provenance.
-Do not omit the working backgrounds or mix old pose formats with V4 source.
+Do not omit the working backgrounds or mix V4 pose banks with V5 source.
+The helper excludes inactive V4 poses and offline V5 support atlases. For a fresh
+payload plus complete per-file manifest, use:
+
+```sh
+python3 scripts/stage-v5.py .build/payload --engine .build/engine-device.so
+```
+
+Optionally add `--tools .build/tools`. Both helpers refuse an existing destination;
+neither accesses hardware.
 
 ## Connect and back up deliberately
 

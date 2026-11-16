@@ -132,27 +132,21 @@ class NativeUI(unittest.TestCase):
   self.i.management_tick();self.assertEqual(self.m.view,'instrument');self.assertFalse(self.i.rows)
 
 class Material(unittest.TestCase):
- def test_all_worlds_fill_increases_exact_seam_fixed_under_audio(self):
+ def test_current_material_contacts_fixed_under_audio(self):
+  # V5 replaces the former V4 horizontal seam; the historical interaction
+  # regression still checks that native life cannot move a stored setting.
   from loop_graphics import material,background,poses
-  from graphics import Canvas,color
-  from roles import ROLE_RGB
+  from material_controls import protected_boxes
+  from graphics import Canvas
   for role in ROLE_IDS:
-   self.assertEqual(len(poses(role)),8*17*5*8192);areas=[]
+   self.assertEqual(len(poses(role)),8*17*5*8192)
    for value in (0,.25,.5,.75,1):
     c=Canvas(background(role));material(c,background(role),role,(value,)*8,0,0,0)
-    y=108-round(value*56);start=(y*1024+40)*2
-    self.assertEqual(c.pixels[start:start+80],color(ROLE_RGB[role])*40)
-    # Compare summed native pixels in the occupied extent, excluding text.
-    raw=bytes(c.pixels);total=0
-    import struct
-    for yy in range(54,106):
-     for xx in range(42,78):
-      packed=struct.unpack_from('<H',raw,(yy*1024+xx)*2)[0]
-      total+=(packed&31)+((packed>>5)&63)+(packed>>11)
-    areas.append(total)
     animated=Canvas(background(role));material(animated,background(role),role,(value,)*8,1,1,1)
-    self.assertEqual(animated.pixels[start:start+80],c.pixels[start:start+80])
-   self.assertEqual(areas,sorted(areas),role)
+    for x0,y0,x1,y1 in protected_boxes(role,value):
+     for y in range(y0,y1+1):
+      start=((48+y)*1024+28+x0)*2;end=start+(x1-x0+1)*2
+      self.assertEqual(c.pixels[start:end],animated.pixels[start:end])
 
 class Libraries(unittest.TestCase):
  def setUp(self):

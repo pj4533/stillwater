@@ -1,0 +1,70 @@
+{
+  "version": 5,
+  "source": "owned V2 BGR565 backgrounds",
+  "files": {
+    "silt.bin": {
+      "bytes": 327680,
+      "sha256": "2fce729e30d5cd545709429a7c947e4e3f18b5e78d423d9843b2489ccd037f82"
+    },
+    "silt.poses": {
+      "bytes": 5570560,
+      "sha256": "b2732c16d44bf54336069f2e443e0bf27996513503e4ad833d2c31080841c018"
+    },
+    "filament.bin": {
+      "bytes": 327680,
+      "sha256": "51515bf9bc2f9f97bfd5841be7c4c81c2601708623e15ef55506ae09ded279df"
+    },
+    "filament.poses": {
+      "bytes": 5570560,
+      "sha256": "e309463e01fc48d1a22e8fa6f0630157c561bd19a53f7a325c4a175cdfc0aa45"
+    },
+    "glass.bin": {
+      "bytes": 327680,
+      "sha256": "3ff9450d3fd00ddb93a03a3c31847115f5215bcde79e2f00b3f0fb5899a718f9"
+    },
+    "glass.poses": {
+      "bytes": 5570560,
+      "sha256": "603bf902bed314f11f6845c2de258c39ca3242833f663cb5de57b811980856b4"
+    },
+    "choir.bin": {
+      "bytes": 327680,
+      "sha256": "a3c49eeb164f614347305590d3ad2f13f805c012ce21767721d790058aa39b24"
+    },
+    "choir.poses": {
+      "bytes": 5570560,
+      "sha256": "419b717dd305275fdcc1d15627b9c3ea12f3b93fe39fbeb3652c50875f28591f"
+    },
+    "oxide.bin": {
+      "bytes": 327680,
+      "sha256": "75b27398a7fbe1b5c8e4bde8204040987efe9a0b8739c9988077aa377def5550"
+    },
+    "oxide.poses": {
+      "bytes": 5570560,
+      "sha256": "f281d895d6ea6aebade668948b8a0077dac89db3e8b0cfe898d2400e6b9081b8"
+    },
+    "backwash.bin": {
+      "bytes": 327680,
+      "sha256": "98afe9370796b47588a57962ffd29b9effb43a709312eafb4fc273790e8759e9"
+    },
+    "backwash.poses": {
+      "bytes": 5570560,
+      "sha256": "5d2ca56fe353cc85a828c1e33b001cef7165d7048bdf5ff06d4017d1eaac9f00"
+    },
+    "spore.bin": {
+      "bytes": 327680,
+      "sha256": "c7d053df7b0d0e36d637d57d1ab9dc755b01e717bf95fd91fc821a2cdacbf702"
+    },
+    "spore.poses": {
+      "bytes": 5570560,
+      "sha256": "9ca2b961a7e5b0dd03c797a65c2fb3e6873d7a4f80ce53d0aebf82a7fb4b328d"
+    },
+    "prism.bin": {
+      "bytes": 327680,
+      "sha256": "cc1b9a67b95f5ee6ecf144160cbfcd2dea03122c713255cafd438f353cc33364"
+    },
+    "prism.poses": {
+      "bytes": 5570560,
+      "sha256": "1b087e399749b0af399ba76213b06d78a2a89b571863625bc4bfe5a3eb19d2d5"
+    }
+  }
+}

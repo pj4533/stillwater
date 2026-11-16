@@ -13,7 +13,7 @@ voice listener or network server exists.
 | `loop_engine.py` | ctypes ABI, bank publication, manual admission, native acknowledgments |
 | `engine.c`, `loop_native.h` | ALSA/history, sample-timed transport, ordered commands and scheduler |
 | `loop_dsp.h`, `roles.py` | Eight original sources/buses, ranges and macro labels |
-| `loop_graphics.py`, `graphics.py` | Role scenes, registered material animation, typography/canvas |
+| `loop_graphics.py`, `material_controls.py`, `graphics.py` | Role scenes, registered material animation, typography/canvas |
 | `hardware.py`, `midi.py` | usbfs display, named raw MIDI, parsing/receipt observation/backpressure |
 | `recorder.py`, `loop_export.py`, `bottle.py` | Film, next-loop streaming WAV, retrospective capture |
 | `scripts/supervisor.py`, `process.py`, `recovery.py` | Exclusive ownership, bounded retries, minimal recovery |
@@ -102,7 +102,11 @@ ownership fails closed and retains evidence. Explicit Settings or stock.sh
 --disable are the deliberate stock escape; crashes never start competing stock
 software. Hardware failure can prevent the recovery display itself.
 
-Source-derived art uses17macro geometries and five independently envelope-gated
-audio poses. Runtime only copies bounded rows; all visited role pose caches total
-44,564,480bytes. Eight organically dimmed working backgrounds keep real Mix/LOOP
-data readable and empty channels clear. See assets/v4/README.md for format.
+V5 uses eight original full-scene material constructions, 17 geometry poses and
+five independently native-energy-gated interior poses. Exact contacts and branch
+states are drawn afterward from the actual normalized parameter. Every 64×64
+patch has a matching two-pixel scene border. Runtime copies bounded rows; the
+single pose cache totals44,564,480bytes, plus eight V5 scenes and eight V4 working
+pages,49,807,360bytes total. Positive-material support atlases are offline test
+metadata and never loaded at runtime. Missing/truncated V5 assets fail startup.
+See [V5 material worlds](V5_MATERIALS.md) and [asset format](../assets/v5/README.md).

@@ -1,67 +1,58 @@
-# Standalone V4 release snapshot
+# Standalone V5 release snapshot
 
-This repository contains the complete distributable instrument, with its existing
-public history and MIT/Push Hack notices. It does not import private parent
-repository history. Runtime source is paired with native ABI5 and all eight V4
-material caches; V2 backgrounds and legacy assets remain for shared regression
-code and reproducible artwork. V3 assets remain available for deliberate rollback.
+This repository contains the complete distributable instrument, with its public
+history, original branding and MIT/Push Hack notices. No private parent history
+is imported. V5 replaces only instrument renderer/artwork; native ABI5, song
+schema3 and versioned gentle sound remain unchanged.
 
-Included: production Python/C, ownership and recovery scripts, portable builds,
-fresh payload preparation, tests, original source art and prepared image data,
-public installation/development/agent documentation and curated media.
+Included: production Python/C, original material-control geometry, eight V5
+scenes and pose banks, offline support atlases, reproducible generators/previews,
+ownership/recovery scripts, portable builds and fresh payload preparation,
+full tests/fixtures, public guides and curated synthetic/actual-test UI media.
+Legacy source art remains for regeneration and shared regression code.
 
-Excluded: SSH keys/host identities/addresses, local configuration, personal
-handoffs/conversations, deployment logs, user songs/history/recordings, vendor
-stock scripts/firmware, backups, downloaded encoders, native executables, cache
-and temporary media. Ignore patterns are a convenience; review tracked files
-before any release. No user session ships in this checkout.
+Excluded: device identity/addresses, keys/host identities, local configuration,
+private feedback/reference attachments, operational logs, user songs/history,
+recordings, backups, vendor software/firmware, downloaded encoders and native
+executables. Ignore patterns complement complete tracked-content review.
 
 ## Reproduce
 
-Follow [DEVELOPMENT](DEVELOPMENT.md). Build with `sh scripts/build.sh`, run
-`python3 -m unittest discover -s tests -q`, then
-`python3 scripts/rehearse-v4.py`. The latter exercises 32 assertions through the
-production parser, native engine, renderer and serialized workers, including
-explicit film start/stop, real H.264/AAC strict decode, Apply, safe library
-rename/load/delete, inventory and durable state. No hardware is opened.
-V3/V2 long-loop rehearsals remain for regression; they are not current controls
-documentation. Regenerate V4 assets with `python3 scripts/prepare-v4-art.py`.
-See [MEDIA](MEDIA.md) for preview provenance and reproduction.
+Follow [Development](DEVELOPMENT.md):
 
-The [runtime manifest](runtime-manifest.json) lists 45 core source/art hashes:
-21 source files, eight V2 backgrounds and sixteen V4 pose/working files.
-`prepare-home.py` adds shared/legacy assets and ownership/recovery scripts,
-refuses an existing destination, excludes caches and never imports private data.
-The packaging tests verify manifest hashes and every role's cache dimensions.
-The native ABI is checked before audio/history startup. Cross-build using
-Zig 0.13.0 on PATH or `ZIG`, targeting GNU2.35 x86_64. Match source/native/art
-as a stopped-service update; see [INSTALL](INSTALL.md).
+```sh
+sh scripts/build.sh
+python3 -m unittest discover -s tests -q
+python3 scripts/rehearse-v5.py
+python3 scripts/prepare-v5-art.py .build/v5-regenerated
+# Optional full production preview:
+python3 scripts/preview-v5.py
+sh scripts/build.sh device
+python3 scripts/stage-v5.py .build/payload --engine .build/engine-device.so
+```
 
-The manifest records the verified reference device engine hash. Rebuilds may
-differ due to debug source/build paths; compare allocated ELF sections when
-checking equivalent output. No compiled engine is committed. Optional FFmpeg
-is separately obtained with its GPL license and provenance; MIT does not cover it.
+The36-check rehearsal verifies parser/native/render/worker integration, actual
+V5 film pixels, strict H264/AAC decode, exact WAV frames/native samples, key,
+library, persistence and Stop. Tests exhaustively check4,352 supported-motion
+combinations. No hardware is opened. [V5 materials](V5_MATERIALS.md).
 
-The [export manifest](export-manifest.json) records hashes/sizes for the complete
-curated tree excluding itself. It contains no private source paths. Fresh archive
-validation checks native build, Python suite, media, local documentation links,
-payload completeness and source/art identity. Automated tests are not a claim
-of human listening, physical pad feel, universal device safety or security audit.
+The [runtime manifest](runtime-manifest.json) lists46 core hashes:22 source files,
+eight V5 scenes, eight V5 pose banks and eight V4 working pages. Packaging checks
+verify every hash and cache size. `prepare-home.py`/`stage-v5.py` add shared legacy
+assets and ownership/recovery scripts, omit inactive V4 poses and offline support
+metadata, refuse an existing destination and never import personal state.
 
-New layers use gentle sound version 2; existing music retains version 1.
-Song schema 3 requires paired ABI5 and is rejected by older builds. Preserve
-newer sessions before rollback; see [sound compatibility](GENTLE_SOUND.md).
+The reviewed deployed reference had92 files. All production source and active
+art match that payload exactly. Public build/art/preview/rehearsal/staging tools
+retain portable toolchain selection, bundled inputs and `.build/` outputs; private
+editorial/device-smoke tools are omitted. Public staging uses this standalone
+checkout rather than a private prior deployment manifest. The renderer preloads
+one pose bank, never duplicate V4/V5 banks. The native engine is unchanged; public
+cross-build allocated ELF sections match the deployed ABI5 reference. Its whole
+file hash can differ with build paths. No compiled engine is committed.
 
-## Gentle update parity
-
-The deployed ABI5 payload contains 86 entries. All 21 core source files and
-all 24 core art caches match it exactly, as do the other shared runtime files.
-Public build/art/preview/benchmark/rehearsal scripts retain portable toolchain
-selection, bundled art inputs and `.build/` output locations. These are deliberate
-packaging differences, not runtime changes. The compiled engine is rebuilt,
-not committed; its allocated ELF sections match the deployed reference.
-Legacy device smoke scripts and older private editorial/QA scripts are excluded:
-they operate historical state or require private captures. The portable gentle
-editor and comparison cover the current reusable offline media workflow without
-private photos, personal recordings, device identities or captured journals.
-No device operation is needed to build or validate this checkout.
+The [export manifest](export-manifest.json) records sizes/hashes for the entire
+curated tracked tree except itself. Fresh-export checks cover build, full tests,
+rehearsal, payload and documentation/media links. Optional FFmpeg remains separate
+under its own license/provenance. Automated checks do not establish human listening,
+physical control feel or universal hardware compatibility.

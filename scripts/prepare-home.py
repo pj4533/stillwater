@@ -21,8 +21,13 @@ def main():
     if any(destination.is_relative_to(ROOT/name) for name in ('src','scripts','assets')):
         parser.error('Destination must be outside the source trees')
     destination.mkdir(parents=True)
+    def curated_ignore(directory,names):
+        ignored={n for n in names if n=='__pycache__' or n.endswith('.pyc')}
+        if Path(directory)==ROOT/'assets/v4':ignored.update(n for n in names if n.endswith('.poses'))
+        if Path(directory)==ROOT/'assets/v5':ignored.add('support')
+        return ignored
     for name in ('src','scripts','assets'):
-        shutil.copytree(ROOT/name,destination/name,ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
+        shutil.copytree(ROOT/name,destination/name,ignore=curated_ignore)
     shutil.copyfile(args.engine,destination/'engine.so')
     if args.tools:
         (destination/'tools').mkdir()

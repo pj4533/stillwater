@@ -8,7 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-c8c4b7?style=flat-square)](LICENSE)
 [![Hardware: Push 3 Standalone](https://img.shields.io/badge/hardware-Push_3_Standalone-9eb7ac?style=flat-square)](docs/INSTALL.md)
-[![Version: V4](https://img.shields.io/badge/version-V4-c2a6c5?style=flat-square)](docs/CONTROLS.md)
+[![Version: V5](https://img.shields.io/badge/version-V5-c2a6c5?style=flat-square)](docs/CONTROLS.md)
 [![Python + C](https://img.shields.io/badge/built_with-Python_%2B_C-b7ad91?style=flat-square)](docs/ARCHITECTURE.md)
 
 [Get started](#play-a-little) · [Install](docs/INSTALL.md) · [Controls](docs/CONTROLS.md) · [Develop](docs/DEVELOPMENT.md) · [Agent guide](AGENTS.md)
@@ -28,15 +28,17 @@ to return to stock for the session; the [installation guide](docs/INSTALL.md)
 explains how to restore stock as the boot default or remove Stillwater. Installation
 alone does not enable auto-start: the deliberate switch step does.
 
-![Stillwater V4 — actual Push display capture](docs/media/v4-device-prism.png)
+![Stillwater V5 — actual Push display capture](docs/media/v5-device-silt.png)
 
-*Actual V4 display pixels from a scripted, isolated device test. Not a camera photograph.*
+*Actual V5 display pixels from a scripted, isolated device test. Not a camera photograph.*
 
 Stillwater turns the pad grid into a looping ambient instrument. Press Play and
 play a note to anchor a one-bar phrase. Add another layer, shape its material,
 and let the loop grow. Every pad stays a scale note, including while browsing
-songs or recordings. The screen’s little vessels fill with each macro value;
-their texture moves with the real sound. Notes from every layer light the pads
+songs or recordings. Each screen control is part of its sound’s material world: a ceramic float,
+a wire contact, a lens tooth or a crystal leaf. The complete object remains
+visible across the full range; its exact marker stays still while music stirs
+its interior. Notes from every layer light the pads
 in that sound’s color.
 
 Python handles the screen, controls and local files. An original C engine makes
@@ -53,10 +55,10 @@ grains and modal shimmer. Build up to eight layers, mix them independently,
 and shape held notes with pressure. New layers start with gentler, softer defaults;
 existing songs and loop sounds keep their original sound. [Sound compatibility](docs/GENTLE_SOUND.md).
 
-![Native renderer animation with fixed macros and real DSP telemetry](docs/media/v4-prism.gif)
+![V5 actual-device animation with fixed macros and real DSP telemetry](docs/media/v5-device-prism.gif)
 
-*Silent GIF: synthetic production-renderer preview, fixed macros, native playback
-then Stop. No physical performance is implied. [Media provenance](docs/MEDIA.md).*
+*Silent GIF: actual pixels sent to Push in an isolated scripted test; fixed macro
+settings, native-energy animation. No physical performance is implied. [Media provenance](docs/MEDIA.md).*
 
 ## Play a little
 
@@ -98,7 +100,7 @@ python3 -m venv .venv
 python3 -m pip install -r requirements-dev.txt
 sh scripts/build.sh
 python3 -m unittest discover -s tests -q
-python3 scripts/rehearse-v4.py
+python3 scripts/rehearse-v5.py
 ```
 
 The rehearsal uses production DSP, renderer, control parser and file workers in
@@ -144,7 +146,7 @@ or calibrated full MPE. Films need FFmpeg and substantial temporary space
 (about 207 MB/minute raw), stop at 30 minutes and preserve a 512 MiB reserve.
 There is no automatic media pruning.
 
-The gentle update passed automated local tests and 29 isolated actual-device checks; the normal
+V5 passed automated local tests and 94 isolated actual-device checks; the normal
 service remained healthy for 60 seconds afterward. Scripted inputs and PCM
 measurements do not establish physical pad feel, perceived hues, human listening
 approval or universal compatibility. Start with speaker/headphone levels low.

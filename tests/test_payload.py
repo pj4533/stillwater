@@ -38,12 +38,12 @@ class PayloadTests(unittest.TestCase):
                 with self.assertRaises(SystemExit):prepare.main()
             self.assertFalse(target.exists())
 
-    def test_v4_payload_contains_all_paired_runtime_assets_and_matching_source(self):
+    def test_v5_payload_contains_all_paired_runtime_assets_and_matching_source(self):
         import hashlib
         import json
         manifest=json.loads((ROOT/'docs/runtime-manifest.json').read_text())
         self.assertEqual(manifest['native_abi'],5)
-        self.assertEqual(len(manifest['runtime_files']),45)
+        self.assertEqual(len(manifest['runtime_files']),46)
         with tempfile.TemporaryDirectory() as temp:
             base=Path(temp);engine=base/'engine.so';engine.write_bytes(b'isolated native fixture')
             target=base/'payload'
@@ -51,6 +51,9 @@ class PayloadTests(unittest.TestCase):
             for name,digest in manifest['runtime_files'].items():
                 self.assertTrue((target/name).is_file(),name)
                 self.assertEqual(hashlib.sha256((target/name).read_bytes()).hexdigest(),digest,name)
+            self.assertTrue((target/'src/material_controls.py').is_file())
+            self.assertFalse((target/'assets/v5/support').exists())
+            self.assertFalse(list((target/'assets/v4').glob('*.poses')))
             for role in ('silt','filament','glass','choir','oxide','backwash','spore','prism'):
-                self.assertEqual((target/'assets/v4'/(role+'.poses')).stat().st_size,5570560)
+                self.assertEqual((target/'assets/v5'/(role+'.poses')).stat().st_size,5570560)
                 self.assertEqual((target/'assets/v4'/(role+'.working')).stat().st_size,327680)

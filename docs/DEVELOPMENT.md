@@ -34,7 +34,7 @@ only when explicitly invoked.
 ```sh
 python3 scripts/preview-gentle.py # synthetic role previews and measured metrics
 python3 scripts/rehearse-gentle.py # fresh gentle growing-loop score
-python3 scripts/rehearse-v4.py # V4 managers, native notes, real film and deletion checks
+python3 scripts/rehearse-v5.py # V5 materials, managers, native notes, real film and deletion checks
 python3 scripts/rehearse-v3.py # long-loop regression
 python3 scripts/rehearse-v2.py # legacy16beat regression
 python3 scripts/benchmark-v3.py
@@ -93,22 +93,24 @@ The `.bin` files are BGR565 image data, not executable binaries. To regenerate:
 
 ```sh
 python3 scripts/prepare-v2-art.py
-python3 scripts/prepare-v4-art.py
-python3 scripts/preview-v4.py # .build/v4-preview; ranges, managers, native audio
+python3 scripts/prepare-v5-art.py
+python3 scripts/preview-v5.py # .build/v5-preview; full ranges, managers, native audio
 # Optional legacy renderer assets:
 python3 scripts/prepare-art.py
 python3 scripts/prepare-organism.py
 ```
 
-The V4 converter derives material deformations from exact prepared V2 pixels,
-including independent audio poses and quiet working backgrounds. Its32low/high
-frames, fixed50%-macro native-audition clips and knob sweeps use the production
-renderer at960x160. Silent geometry persists.
+The V5 baker makes original complete material constructions from owned V2 grain.
+It writes eight scenes, eight pose banks, eight offline support atlases and two
+hash manifests. Pass an output directory for deterministic comparison. The V5
+suite exhaustively checks all4,352 geometry/audio combinations for motion only
+inside positive material, with fixed contacts and stable silence. The optional
+preview renders56 fixed-control native-music clips and native960×160 range sheets.
 
 The V2 converter downsamples then nearest-neighbor scales for intentional pixel
 texture; runtime needs no Pillow. Draw text after animated material, retain
 readable negative space, and keep main/mixer/help previews at native 960×160.
-Curated media provenance and regeneration are in [MEDIA](MEDIA.md): V4 device
+Curated media provenance and regeneration are in [MEDIA](MEDIA.md): V5 device
 display captures and synthetic production-renderer animation, with no camera footage. Do not check generated music, logs or private state in.
 
 See [gentle defaults and compatibility](GENTLE_SOUND.md) for versioned sound,

@@ -23,7 +23,7 @@ Effects/levels/master apply smoothly once to held/tail audio.
 
 Run `sh scripts/build.sh` then `python3 -m unittest discover -s tests -v`.
 Install development requirements/host FFmpeg as documented. For integration,
-DSP or media changes run memory-only `python3 scripts/rehearse-v4.py`; measure
+DSP or media changes run memory-only `python3 scripts/rehearse-v5.py`; measure
 relevant macro/timing/drain scripts. Report exact counts, architecture and codec
 alignment tolerances; never claim human listening from PCM checks. Cross-build
 `sh scripts/build.sh device` with Zig0.13.0 for paired source/native hardware
@@ -35,7 +35,7 @@ GIF. Text remains last/readable; no flashes, strobes or per-frame fsync. Pillow
 is offline only. Curated assets/*.bin, .poses and .working are packed image data; .build is disposable.
 V4 length changes require guarded native boundary acknowledgment before history
 commit. Preserve whole-window key normalization and onset-owned recording. Ship
-all V2 backgrounds and V4 pose/working assets with matching ABI5 source/native.
+all V5 scenes/poses, material_controls.py and V4 working assets with matching ABI5 source/native.
 
 ## Hardware/deployment
 

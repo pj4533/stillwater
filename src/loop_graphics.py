@@ -6,28 +6,27 @@ from graphics import Canvas,COLORS,INK,BRASS,DARK
 from roles import ROLE_IDS,MACROS,ROLE_RGB
 from loop_model import TICKS,PITCH_NAMES,MODES
 from management_graphics import key_page,manager_page,film_label
+from material_controls import landmark,branches
 ASSETS=Path(__file__).resolve().parents[1]/'assets'/'v2'
 
 @lru_cache(maxsize=8)
 def background(role):
-    try:
-        data=(ASSETS/(role+'.bin')).read_bytes()
-        if len(data)!=1024*160*2:raise ValueError('Invalid role artwork')
-        return data
-    except (OSError,ValueError):return bytes(1024*160*2)
+    data=(ASSETS.parent/'v5'/(role+'.bin')).read_bytes()
+    if len(data)!=1024*160*2:raise ValueError('Invalid V5 instrument background: '+role)
+    return data
 
 
 @lru_cache(maxsize=8)
 def poses(role):
-    data=(ASSETS.parent/'v4'/(role+'.poses')).read_bytes()
-    if len(data)!=8*17*5*64*64*2:raise ValueError('Invalid V3 mechanism poses')
+    data=(ASSETS.parent/'v5'/(role+'.poses')).read_bytes()
+    if len(data)!=8*17*5*64*64*2:raise ValueError('Invalid V5 mechanism poses')
     return data
 
 
 @lru_cache(maxsize=8)
 def working_background(role):
     data=(ASSETS.parent/'v4'/(role+'.working')).read_bytes()
-    if len(data)!=1024*160*2:raise ValueError('Invalid V3 working background')
+    if len(data)!=1024*160*2:raise ValueError('Invalid V4 working background')
     return data
 
 
@@ -36,29 +35,29 @@ def preload():
     for role in ROLE_IDS:background(role);poses(role);working_background(role)
 
 
+def music_pose(role,column,envelope,fx,seconds):
+    """Native-gated interior pose; never changes an exact parameter contact."""
+    energy=min(1,max(0,envelope)*5)
+    phase=seconds*(.65+ROLE_IDS.index(role)*.055)+column*.13+fx*.15
+    breathing=.5+.5*math.sin(phase*math.tau)
+    # Quiet gentle voices still stir visibly. Energy gates music; amplitude
+    # changes its excursion, with a small visible minimum while sounding.
+    return 0 if energy<=.00001 else 1+round(3*breathing*max(.4,energy))
+
+
 def material(c,base,role,parameters,envelope,fx,seconds):
-    """Separate macro geometry and native-audio deformation, including at both
-    macro endstops. Only source material pixels inside each soft mask move."""
-    data=poses(role);energy=min(1,max(0,envelope)*5)
+    """Registered V5 material bodies and protected exact physical contacts.
+    Only native-gated interior details change between baked audio poses."""
+    data=poses(role)
     for i,value in enumerate(parameters):
         pose=max(0,min(16,round(value*16)))
-        # Native energy gates all motion; the PCM clock supplies a slow phase
-        # even when an effect metric (notably Oxide dropout) is zero.
-        phase=seconds*(.65+ROLE_IDS.index(role)*.055)+i*.13+fx*.15
-        breathing=.5+.5*math.sin(phase*math.tau)
-        audio=max(0,min(4,round(energy*(1+3*breathing))))
+        audio=music_pose(role,i,envelope,fx,seconds)
         offset=((i*17+pose)*5+audio)*8192;x=i*120+28
         for y in range(64):
             start=((48+y)*1024+x)*2
             c.pixels[start:start+128]=data[offset+y*128:offset+(y+1)*128]
-        # Fixed physical endstops; the exact seam is independent of audio pose.
-        rgb=ROLE_RGB[role];left=i*120+40;front=108-round(56*value)
-        for yy,label in ((52,'100'),(108,'0')):
-            c.rect(left-4,yy-1,48,3,(7,14,13));c.rect(left-4,yy,48,1,BRASS)
-            c.text(i*120+8,yy-3,label,INK)
-        c.rect(left-4,80,5,1,BRASS)
-        c.rect(left-1,front-1,42,4,(7,14,13));c.rect(left,front,40,2,rgb)
-        c.rect(left+40,front-2,5,6,rgb)
+        branches(c,role,i,value)
+        landmark(c,role,i,value)
 
 
 def render(model,stats,instrument=None):

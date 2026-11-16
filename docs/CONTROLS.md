@@ -1,4 +1,4 @@
-# Stillwater V4 controls
+# Stillwater V5 controls
 
 **Session opens LOOPS; Shift+Record opens RECORDINGS; Scale opens the visible
 KEY picker.** Clip opens LOOP, whose first two lower buttons also open LOOPS and
@@ -44,9 +44,12 @@ Mute/zero layer level, Stop and song/key resets clear stale indications.
 Master zero still allows visual practice. Physical hue recognition remains a
 playing check.
 
-The eight source worlds now fill visibly upward between permanent0/100 stops.
-A bright40pixel seam/notch follows the exact parameter even when stopped.
-Audio animates internal source texture without moving the range boundary.
+Each role has its own complete material construction: amphora, wire bridge,
+cracked lens, ceramic lung, tape loop, river gate, living root or crystal fan.
+Exact contacts and permanent witnesses show the setting from 0 to 100%, even
+silently. Native music animates only the material interior; the contact never
+moves with audio. All eight macro names, encoder mappings and ranges are unchanged.
+See [V5 material worlds](V5_MATERIALS.md).
 
 ## Playing and sound design
 
