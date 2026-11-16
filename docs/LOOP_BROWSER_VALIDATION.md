@@ -1,6 +1,7 @@
-# Loop browser and loaded-source candidate — 2026-11-16
+# Loop browser and loaded-source deployment — 2026-11-16
 
-Source follows independent review; live deployment evidence will be recorded separately.
+Reviewed source is published and deployed. Actual-device validation passed;
+existing music/history/media were preserved.
 
 ## Controls and persistence
 
@@ -56,10 +57,28 @@ before WORKING at x740; a regression measures that text extent. Browser hint and
 full controlled selected filename fit the details area. No font brackets are
 used (the appliance font lacks them); `/ ID` is drawable. Names are shown in the
 existing small header font, while library title/actions retain their larger font.
-Physical knob feel, hardware hue/contrast, listening and actual-device acceptance
-remain unverified. Overlapping pads, native sounds and sound defaults unchanged.
+Physical knob feel, hardware hue/contrast and listening remain unverified.
+Actual-device checks passed as recorded below. Overlapping pads, native sounds and sound defaults unchanged.
 
 
 The two reviewed completion-order regressions pass: repeated identical saves
 remain unedited; metadata-only rename/delete does not cancel a pending LOAD/New.
 Public strict build, 315 tests, and 36 production rehearsal checks pass.
+
+## Actual-device checks
+
+104/104 quiet checks passed in33.864s using a disposable master-zero home under
+the sole production MIDI/ALSA/display owner. Synthetic browser packets entered
+Midi.read and the production parser/dispatcher; nobody is claimed to have
+physically turned the wheel. Checks cover browsing/no automatic load, volume
+isolation, saved identity,24character rename, pinned confirmation, load/edit,
+durable restart-reader/delete/New, and saved RECORDINGS. All64 overlapping pads,
+Dorian triangle, global button commands and stopped idle behavior also passed.
+
+92/92 deployed hashes verified; native ABI6 unchanged. All live sessions/history,
+recordings and current music were preserved.61normal-service samples over61.56s
+showed stopped clean state, advancing audio/display, zero xruns and peak, live
+owners and maximum reported render8.282ms. New service logs contained only
+starting/ready, with no new errors. Rollback retains a source-capable reader and
+latest sessions. [Sanitized results](loop-browser/device-acceptance.json) ·
+[Actual synthetic fixture frames](loop-browser/device-contact.png).

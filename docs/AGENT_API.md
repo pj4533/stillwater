@@ -1,4 +1,4 @@
-Loop-browser candidate adds `management.loaded_source`: null for unknown/unnamed,
+Deployed loop browser adds `management.loaded_source`: null for unknown/unnamed,
 otherwise controlled saved-file `id`, display `name`, Boolean `modified`/`deleted`.
 It is separate from `selected_id`. Browse LOOPS/SAVED RECORDINGS with channel0
 CC70 (four relative units/row) or93/95 (press one row); Volume79 stays master.

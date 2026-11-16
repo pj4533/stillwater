@@ -1,7 +1,8 @@
-Loop browser follow-up: the large right navigation wheel browses LOOPS and saved
+Loop browser follow-up deployed: the large right navigation wheel browses LOOPS and saved
 RECORDINGS. LOADED names the saved source separately from the highlighted item,
 with durable EDITED/DELETED status. See [controls](docs/CONTROLS.md) and
-[validation](docs/LOOP_BROWSER_VALIDATION.md). Native ABI6 and sounds unchanged.
+[validation](docs/LOOP_BROWSER_VALIDATION.md). 104 quiet device checks and92/92 deployed hashes passed; music/history/media
+preserved. Native ABI6 and sounds unchanged.
 
 <div align="center">
 

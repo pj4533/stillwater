@@ -1,4 +1,4 @@
-# Loop browser and saved-source identity — candidate
+# Loop browser and saved-source identity — deployed 2026-11-16
 
 LOOPS and RECORDINGS/SAVED use the large right navigation wheel: CC70 scroll,
 CC93/95 one-row nudges. Scroll retains four-unit accumulation, idle/reversal

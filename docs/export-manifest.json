@@ -30,8 +30,8 @@
       "sha256": "63182d4406b5faf83cbcb6941c52762b24e003bffa92e343cb1fc0d1db715ff1"
     },
     "README.md": {
-      "bytes": 9175,
-      "sha256": "c0339fc78a8746afdffd859ccc4de8576cf08a95d72da47797ee51ee12b624c4"
+      "bytes": 9272,
+      "sha256": "3d034ce78d4a3225d82cf376c032aa5b15d0f73f1237e3d7c8b9a7ef8d6ac517"
     },
     "assets/README.md": {
       "bytes": 4667,
@@ -386,8 +386,8 @@
       "sha256": "a3f404d60e852aed2335675dfe65c9ee64242846c790e5dec3bf8db6a49e6879"
     },
     "docs/AGENT_API.md": {
-      "bytes": 4090,
-      "sha256": "a68edd39c81538e065b7409a9106303dfc07d09e8b149ffe6717b95ac4fd06e3"
+      "bytes": 4089,
+      "sha256": "ba49e1e797991a5cafed4c8df502c1c14f72dc2593f25a1d8ef6e4c6146e0759"
     },
     "docs/ARCHITECTURE.md": {
       "bytes": 7319,
@@ -402,8 +402,8 @@
       "sha256": "64612cf8c61845be48f656dad5182a5f82bdaee1224aad168c588313decb4388"
     },
     "docs/CONTROL_FIXES.md": {
-      "bytes": 9351,
-      "sha256": "f074233a76689c86c2f48cd00aefecf4c785174f4dfb6317cbd886de58a7686b"
+      "bytes": 9361,
+      "sha256": "5a7bc310bd20b00f511d2fc9a78b027c2fb9d54cdfbb8f2e9d82ac3bdc97960c"
     },
     "docs/CREDITS.md": {
       "bytes": 2892,
@@ -426,8 +426,8 @@
       "sha256": "f1a5209391ba318b3f8ed882770a2944d771664c2e3efe16662701e409590d36"
     },
     "docs/LOOP_BROWSER_VALIDATION.md": {
-      "bytes": 3971,
-      "sha256": "c8dcb91e5d595652501ac8eb8a0e6ffcb421ba5cf998c733f91a234d3689b777"
+      "bytes": 5142,
+      "sha256": "fa7a29fd558bd10a1f14f0a6bda0d7e1af1f59f1032015e852e5ff19a9aa8803"
     },
     "docs/MEDIA.md": {
       "bytes": 2835,
@@ -440,6 +440,14 @@
     "docs/loop-browser/contact.png": {
       "bytes": 84711,
       "sha256": "5084340c17865537ea3df2c346c87f31b283851ae19e448a387c8814fb62205d"
+    },
+    "docs/loop-browser/device-acceptance.json": {
+      "bytes": 5364,
+      "sha256": "b873af9f889b10c452c400587d6f0c6bafa825d2b61b86da3241b05bc19b9791"
+    },
+    "docs/loop-browser/device-contact.png": {
+      "bytes": 65803,
+      "sha256": "ecd5625591cc972d378f54dd3469c52f77de82f14c0fcd2957dcf992895ef25d"
     },
     "docs/media/stillwater-banner.png": {
       "bytes": 2515592,
