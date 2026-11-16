@@ -1,0 +1,76 @@
+# Credentials and machine-specific configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+id_*
+known_hosts*
+ssh_config*
+device-config*
+config.local.*
+# Private instrument data / exports / recovery
+sessions/
+history/
+recordings/
+backups/
+recovery/
+logs/
+*.log
+*.sock
+*.pid
+metrics.json
+ready
+enabled
+return-stock
+frame.bgr565
+*.wav
+*.flac
+*.mp3
+*.m4a
+*.aac
+*.mp4
+*.mov
+*.s16le
+*.bgr565
+*.part
+*.download
+# Build/cache/virtual environments
+.build/
+build/
+dist/
+__pycache__/
+*.py[cod]
+*.so
+*.o
+*.a
+.venv/
+venv/
+.pytest_cache/
+.cache/
+.DS_Store
+# Curated art caches are source data, not native executables.
+# Generated intermediate previews stay in .build; reviewed media stays docs/media.
+# Additional private local data / generated intermediates
+*.pub
+*.sqlite
+*.sqlite3
+*.db
+*.journal
+*.history.json
+current*.json
+state/
+generated/
+tmp/
+.art-cache/
+*.tar
+*.tar.gz
+*.tar.xz
+*.zip
+*.bundle
+/tools/ffmpeg*
+/tools/ffprobe*

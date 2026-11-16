@@ -1,0 +1,9 @@
+Stillwater's direct display framing, XOR encoding and hardware control numbers
+are adapted from Federico Pepe's MIT-licensed Ableton Push Hack, revision
+ce412f54065b89ff6f341c588e35dccec7cc0bda, core/display/{usb,codec,geometry}.go
+and core/push3/{buttons,encoder}.go. The full license is LICENSE.push-hack.
+https://github.com/federico-pepe/ableton-push-hack
+
+Ambient Town by Kieran Klaassen inspired the approachable ambient workflow and
+previewable agent proposals. No Ambient Town application code or assets copied.
+https://frontier.every.to/experiments/ambient-town

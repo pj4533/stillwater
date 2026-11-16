@@ -1,0 +1,24 @@
+#!/bin/sh
+# Stillwater boot selector. Original vendor file preserved verbatim on /data.
+APP=/data/push-ambient
+case "${1:-}" in
+ start)
+  if [ -e "$APP/enabled" ]; then
+    if [ -e /run/stillwater-supervisor.pid ] && kill -0 "$(cat /run/stillwater-supervisor.pid)" 2>/dev/null; then exit 0; fi
+    start-stop-daemon -b -m --pidfile /run/stillwater-supervisor.pid -S -- /bin/sh "$APP/scripts/supervise.sh"
+  else
+    "$APP/recovery/push3.stock" start
+  fi
+  ;;
+ stop)
+  if [ -f /run/stillwater-supervisor.pid ]; then
+    if ! /usr/bin/python3 "$APP/scripts/process.py" stop-service; then
+      echo 'Stillwater did not release its hardware; stop failed' >&2
+      exit 1
+    fi
+  elif [ -f /var/lib/push3.pid ] && kill -0 "$(cat /var/lib/push3.pid)" 2>/dev/null; then
+    "$APP/recovery/push3.stock" stop
+  fi
+  ;;
+ *) echo 'Usage: push3 start|stop';exit 1;;
+esac
