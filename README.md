@@ -1,13 +1,3 @@
-Jog sensitivity corrected: each right-wheel step immediately selects one item.
-111quiet device checks passed; music/history/media preserved.
-[Validation](docs/loop-browser/JOG_SENSITIVITY.md).
-
-Loop browser follow-up deployed: the large right navigation wheel browses LOOPS and saved
-RECORDINGS. LOADED names the saved source separately from the highlighted item,
-with durable EDITED/DELETED status. See [controls](docs/CONTROLS.md) and
-[validation](docs/LOOP_BROWSER_VALIDATION.md). 104 quiet device checks and92/92 deployed hashes passed; music/history/media
-preserved. Native ABI6 and sounds unchanged.
-
 <div align="center">
 
 ![Stillwater — ambient water and light wordmark](docs/media/stillwater-banner.png)
@@ -90,6 +80,10 @@ settings, native-energy animation. No physical performance is implied. [Media pr
 | **Stop Clips · Volume** | Silence immediately · global master |
 | **Hold Settings 2 seconds** | Deliberately return to stock software |
 
+The large right navigation wheel browses LOOPS and saved RECORDINGS, selecting
+one item per step. LOADED names the saved source separately from the highlighted
+item, with durable EDITED/DELETED status. [Full controls](docs/CONTROLS.md).
+
 Film is **off by default**. Playing or recording notes never starts a film.
 Films capture actual screen pixels and native stereo output, not a microphone.
 Recordings stay local; SAVED offers details, explicit recovery and confirmed
@@ -158,6 +152,12 @@ four bars and history. No input recording, plugin hosting, arrangement timeline
 or calibrated full MPE. Films need FFmpeg and substantial temporary space
 (about 207 MB/minute raw), stop at 30 minutes and preserve a 512 MiB reserve.
 There is no automatic media pruning.
+
+The loop browser follow-up passed 104 quiet device checks and 92/92 deployed
+hash checks; the jog sensitivity correction passed 111 quiet device checks.
+Music, history and media were preserved; native ABI6 and sounds were unchanged.
+[Loop browser validation](docs/LOOP_BROWSER_VALIDATION.md) ·
+[Jog sensitivity validation](docs/loop-browser/JOG_SENSITIVITY.md).
 
 V5 passed automated local tests and 94 isolated actual-device checks; the normal
 service remained healthy for 60 seconds afterward. Scripted inputs and PCM
